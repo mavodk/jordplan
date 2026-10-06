@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="da">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jordplan – klikbar prototype med kort</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" onerror="this.onerror=null;this.href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'">
+<style>
+:root{--ink:#0B2D3B;--quiet:#446470;--line:#CEDBE0;--ground:#F5F7FA;--green:#31815F;--green-d:#215C44;--tint:#DFF2EB}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);font-family:'DM Sans',system-ui,sans-serif;color:var(--ink);font-size:15px;line-height:1.45}
+a{color:var(--green)}a:hover{color:#215C44}
+.hdr{position:relative;z-index:1100;background:#0B2D3B;color:#fff;display:flex;align-items:center;gap:16px;padding:0 32px;min-height:64px}
+.brand{display:flex;align-items:center;gap:12px;background:none;border:0;color:#fff;cursor:pointer;font:inherit;text-align:left;padding:8px 0;min-width:0}
+.brand img{width:36px;height:36px;flex-shrink:0}
+.bt{display:block;font-size:20px;font-weight:700;line-height:1.1;letter-spacing:-.01em}
+.bs{display:block;font-size:12px;color:#BECED4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.navs{display:flex;gap:4px;margin-left:auto}
+.nav{background:none;border:0;color:#DDE7EB;font:inherit;font-size:15px;font-weight:500;padding:10px 12px;min-height:44px;cursor:pointer;border-radius:6px;white-space:nowrap}
+.nav:hover{color:#fff;background:#20404D}
+.nav.on{color:#fff;font-weight:700;box-shadow:inset 0 -3px 0 #87BDA5}
+.nav:focus-visible,.userbtn:focus-visible,.menubtn:focus-visible,.brand:focus-visible{outline:2px solid #87BDA5;outline-offset:2px}
+.userbtn{display:flex;align-items:center;gap:8px;background:none;border:1px solid #446470;color:#fff;border-radius:999px;padding:6px 14px 6px 8px;min-height:44px;font:inherit;font-size:14px;cursor:pointer;flex-shrink:0;max-width:220px}
+.userbtn span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.userbtn:hover{background:#20404D}
+.menubtn{display:none;align-items:center;justify-content:center;width:44px;height:44px;border:1px solid #446470;border-radius:8px;background:none;color:#fff;cursor:pointer;flex-shrink:0}
+@media (max-width:1000px){
+ .hdr{padding:0 16px;gap:8px}
+ .menubtn{display:flex;order:3}
+ .userbtn{margin-left:auto;order:2;padding:6px}
+ .userbtn span{display:none}
+ .navs{display:none;position:absolute;top:100%;left:0;right:0;flex-direction:column;gap:2px;background:#0B2D3B;padding:8px 16px 16px;border-top:1px solid #2E4F5C;box-shadow:0 8px 16px rgba(0,15,21,.25)}
+ .hdr.open .navs{display:flex}
+ .nav{text-align:left;width:100%;padding:12px}
+ .nav.on{box-shadow:inset 3px 0 0 #87BDA5}
+}
+.proto{background:#F7E6BA;color:#0B2D3B;font-size:13px;padding:6px 32px;max-height:120px;overflow:hidden;animation:protoOut .6s ease 3s forwards}
+@keyframes protoOut{to{opacity:0;max-height:0;padding-top:0;padding-bottom:0}}
+@media (prefers-reduced-motion:reduce){.proto{animation-duration:.01s}}
+.wrap{display:grid;grid-template-columns:minmax(320px,390px) minmax(0,1fr);gap:24px;padding:24px 32px}
+.panel{background:#fff;border:1px solid var(--line);border-radius:10px;padding:24px}
+.grey{background:#E6EDF0}
+.h1{font-size:26px;font-weight:600;margin:0 0 12px;line-height:1.2}
+.h2{font-size:20px;font-weight:600;margin:0 0 12px}
+.lbl{display:block;font-size:14px;font-weight:500;margin:14px 0 6px}
+.sm{font-size:13px;color:var(--quiet)}
+.inp{width:100%;min-height:44px;border:1px solid #A6B9C0;border-radius:8px;padding:8px 12px;font:inherit;background:#fff;color:inherit}
+.inp:focus{outline:2px solid var(--green);outline-offset:1px}
+.chk{display:flex;gap:10px;align-items:flex-start;font-size:14px;margin:10px 0;cursor:pointer}
+.chk input{width:18px;height:18px;margin-top:1px;accent-color:var(--green);flex-shrink:0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;border-radius:8px;border:1px solid var(--green);background:var(--green);color:#fff;font:inherit;font-weight:600;cursor:pointer;text-decoration:none}
+.btn:hover{background:var(--green-d);color:#fff}
+.btn.ghost{background:#fff;color:var(--green)}
+.btn.ghost:hover{background:var(--tint)}
+.btn.dark{background:#0B2D3B;border-color:#0B2D3B}
+.link{background:none;border:0;padding:0;color:var(--green);text-decoration:underline;font:inherit;cursor:pointer;min-height:32px;display:inline-flex;align-items:center;gap:6px}
+.legend{display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;font-size:13px;margin-top:20px;padding-top:16px;border-top:1px solid #DDE7EB}
+.lg{display:flex;align-items:center;gap:8px}
+.sw,.lmk{position:relative;display:inline-block;width:16px;height:16px;flex-shrink:0}
+.lmk{width:26px;height:26px;border-radius:50%;cursor:pointer}
+.sw::before,.lmk::before{content:'';position:absolute;inset:0}
+.lmk::before{inset:5px}
+.t-gen::before{background:#7b2cbf;border-radius:50%;box-shadow:0 0 0 2px #fff}
+.t-nyt::before{background:#C2273B;transform:rotate(45deg) scale(.82);box-shadow:0 0 0 2px #fff}
+.t-res::before{background:#0B2D3B;transform:rotate(45deg) scale(.82);box-shadow:0 0 0 2px #fff}
+.t-anl::before{background:#31815F;clip-path:polygon(50% 0,100% 100%,0 100%)}
+.t-kar::before{background:#D19111;clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)}
+.hollow{opacity:.5}
+.lmk.sel{box-shadow:0 0 0 3px #fff,0 0 0 6px #D19111;opacity:1}
+.leaflet-div-icon.mkicon{background:none;border:0}
+.mapwrap{position:relative;border:1px solid var(--line);border-radius:10px;overflow:hidden;min-height:0;background:#E6EDF0}
+#mapView{height:calc(100vh - 64px);min-height:560px;grid-template-columns:var(--side,clamp(360px,32vw,620px)) 14px minmax(0,1fr);gap:0 6px}
+.splitter{cursor:col-resize;display:flex;align-items:center;justify-content:center;border-radius:6px;touch-action:none}
+.splitter::before{content:'';width:4px;height:48px;border-radius:2px;background:#A6B9C0;transition:background .15s,height .15s}
+.splitter:hover::before,.splitter:focus-visible::before,.splitter.drag::before{background:#31815F;height:72px}
+.splitter:focus-visible{outline:2px solid #31815F;outline-offset:-2px}
+body.resizing{cursor:col-resize;user-select:none}
+#mapView>.panel{overflow-y:auto;min-height:0}
+#map{position:absolute;inset:0}
+.mapmsg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;color:var(--quiet)}
+.originhint{position:absolute;left:50%;top:12px;transform:translateX(-50%);z-index:600;background:#0B2D3B;color:#fff;border-radius:8px;padding:8px 14px;font-size:14px;pointer-events:none}
+.xbasebox{position:absolute;right:12px;top:12px;z-index:500;background:#fff;border:1px solid #A6B9C0;border-radius:8px;padding:10px 12px;font-size:13px;width:250px;box-shadow:0 2px 8px rgba(0,0,0,.12)}
+.basebox label{display:flex;gap:8px;align-items:center;margin:4px 0;cursor:pointer}
+.basebox .inp{min-height:36px;font-size:13px;padding:6px 8px}
+.mapcount{position:absolute;left:12px;bottom:28px;z-index:500;background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:13px}
+.cattip{font-family:'DM Sans',system-ui,sans-serif;border:2px solid #7b2cbf;border-radius:8px;padding:6px 10px}
+.res-item{display:block;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid #DDE7EB;padding:14px 0;cursor:pointer;font:inherit;color:inherit}
+.res-item:hover .rn{text-decoration:underline}
+.rn{font-weight:600;color:var(--green);display:flex;align-items:center;gap:10px;font-size:16px;flex-wrap:wrap}
+.meta{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;font-size:13px;color:#395966;margin-top:6px}
+.badge{font-size:12px;font-weight:600;padding:2px 8px;border-radius:4px;white-space:nowrap}
+.b-booked{background:#FCCFD5;color:#791422}.b-afventer{background:#F7E6BA;color:#0B2D3B}.b-ledig{background:#E2F7E9;color:#084F21}
+.b-doc{background:#E6EDF0;color:#395966;margin-right:6px}
+.toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:#0B2D3B;color:#fff;padding:12px 20px;border-radius:8px;z-index:2000;box-shadow:0 6px 20px rgba(0,0,0,.2)}
+.overlay{position:fixed;inset:0;background:rgba(20,20,19,.45);display:flex;align-items:center;justify-content:center;z-index:1500;padding:16px}
+.modal{background:#fff;border-radius:12px;padding:28px;width:min(480px,100%)}
+.sec{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--quiet);margin:20px 0 8px}
+.tbl{width:100%;border-collapse:collapse;font-size:14px}
+.tbl th{text-align:left;font-weight:600;border-bottom:1px solid #A6B9C0;padding:8px 6px}
+.tbl td{border-bottom:1px solid #DDE7EB;padding:8px 6px;vertical-align:middle}
+.page{max-width:1240px;margin:0 auto;padding:24px 32px}
+.grid3{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.35fr) minmax(0,1fr);gap:24px;align-items:start}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(360px,100%),1fr));gap:24px}
+.pill{display:inline-flex;align-items:center;gap:4px;background:var(--tint);border:1px solid #9FCCBA;border-radius:999px;padding:2px 2px 2px 12px;font-size:13px;margin:4px 6px 4px 0}
+.x{width:32px;height:32px;border:0;border-radius:50%;background:transparent;cursor:pointer;font-size:16px;color:#395966}
+.x:hover{background:#CAE5DA}
+.err{color:#C2273B;font-size:13px;margin-top:6px}
+.ok{color:var(--green);font-size:14px}
+.note{font-size:13px;color:var(--quiet);margin:0}
+.kv{display:grid;grid-template-columns:150px minmax(0,1fr);gap:4px 12px;font-size:14px;margin:0}
+.kv dt{color:var(--quiet)}.kv dd{margin:0}
+.attest{background:#fff;border:1px solid #A6B9C0;border-radius:4px;padding:24px;margin-top:20px}
+.qr{display:grid;grid-template-columns:repeat(9,8px);width:72px;height:72px}
+.qr span{width:8px;height:8px}
+.plot{position:relative;height:200px;background:#DDE7EB;border-radius:6px;overflow:hidden}
+.delomr{position:absolute;background:#F3CE80;border:1px dashed #AC760E;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600}
+.card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:24px;display:flex;flex-direction:column;gap:10px}
+.screen{background:#EDF2F5;border:1px solid #CEDBE0;border-radius:10px;padding:16px;margin-top:20px;display:flex;gap:12px}
+.vh{position:absolute;left:-9999px}
+.originbox{background:#EDF2F5;border:1px solid #CEDBE0;border-radius:8px;padding:4px 12px;margin-bottom:8px}
+.foldbtn{display:flex;align-items:center;gap:10px;width:100%;background:none;border:0;padding:8px 0;min-height:44px;font:inherit;font-weight:600;font-size:15px;color:#0B2D3B;cursor:pointer;text-align:left}
+.foldbtn:focus-visible{outline:2px solid #31815F;outline-offset:2px;border-radius:6px}
+.chev{width:8px;height:8px;border-right:2px solid #31815F;border-bottom:2px solid #31815F;transform:rotate(-45deg);transition:transform .15s;flex-shrink:0}
+.chev.open{transform:rotate(45deg)}
+.dist{margin-left:auto;font-size:13px;font-weight:600;color:#0B2D3B;background:#E6EDF0;border-radius:999px;padding:1px 8px}
+.res-item.blocked{opacity:.55}
+.res-item.blocked .rn{color:#446470}
+.blk{display:block;font-size:13px;color:#791422;margin-top:4px}
+.rinfo{font-size:13px;color:#0B2D3B;background:#FCF6E8;border:1px solid #F3CE80;border-radius:6px;padding:6px 10px}
+div.blk{background:#FFEFF1;border:1px solid #FCCFD5;border-radius:6px;padding:6px 10px}
+.lmk.blocked{filter:grayscale(1);opacity:.4}
+.distlbl{display:inline-block;background:#fff;border:1px solid #A6B9C0;border-radius:999px;padding:0 6px;font-size:11px;font-weight:600;color:#0B2D3B;white-space:nowrap;line-height:16px}
+.distlbl.off{color:#567480;border-style:dashed}
+.pnr{display:grid;gap:4px;margin-bottom:16px}
+.annhead{display:flex;justify-content:flex-end;margin-bottom:12px}
+.fold{background:#fff;border:1px solid #CEDBE0;border-radius:10px;margin-bottom:24px}
+.fold summary{cursor:pointer;padding:16px 20px;font-weight:600;font-size:16px;list-style:none;display:flex;align-items:center;gap:10px;min-height:44px}
+.fold summary::-webkit-details-marker{display:none}
+.fold summary::before{content:'';width:8px;height:8px;border-right:2px solid #31815F;border-bottom:2px solid #31815F;transform:rotate(-45deg);transition:transform .15s;flex-shrink:0}
+.fold[open] summary::before{transform:rotate(45deg)}
+.fold summary:focus-visible{outline:2px solid #31815F;outline-offset:-2px;border-radius:10px}
+.foldbody{padding:0 20px 20px 38px;font-size:15px}
+.leaf{list-style:none;margin:0;padding:0;display:grid;gap:10px;max-width:820px}
+.leaf li{position:relative;padding-left:24px}
+.leaf li::before{content:'';position:absolute;left:0;top:5px;width:12px;height:12px;background:#31815F;border-radius:0 70% 0 70%}
+.guide{margin:0 0 12px;padding-left:20px;display:grid;gap:8px;font-size:15px}
+.ndrow{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid #DDE7EB}
+.fs{border:0;padding:0;margin:14px 0 0;min-width:0}
+.fs .lbl{margin-top:0;padding:0}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{position:relative;cursor:pointer}
+.chip input{position:absolute;opacity:0;width:1px;height:1px}
+.chip span{display:inline-flex;align-items:center;min-height:36px;padding:0 12px;border:1px solid #A6B9C0;border-radius:999px;font-size:14px;background:#fff}
+.chip input:checked+span{background:#DFF2EB;border-color:#31815F;color:#144733;font-weight:600}
+.chip input:focus-visible+span{outline:2px solid #31815F;outline-offset:2px}
+.tip{position:relative;display:inline-flex}
+.tipbtn{width:20px;height:20px;border-radius:50%;border:1px solid #446470;background:#fff;color:#0B2D3B;font:600 12px/1 'DM Sans',system-ui,sans-serif;font-style:italic;cursor:help;padding:0;display:inline-flex;align-items:center;justify-content:center}
+.tiptxt{position:absolute;left:-60px;bottom:calc(100% + 8px);width:240px;background:#0B2D3B;color:#fff;font-size:13px;font-weight:400;line-height:1.4;padding:8px 10px;border-radius:6px;visibility:hidden;opacity:0;transition:opacity .15s;z-index:600;pointer-events:none}
+.tip:hover .tiptxt,.tipbtn:focus+.tiptxt{visibility:visible;opacity:1}
+.numbtn{background:none;border:0;border-bottom:1px dashed #31815F;color:#31815F;font:inherit;font-weight:600;padding:0 2px;cursor:pointer}
+.numinp{width:110px;min-height:32px;border:1px solid #31815F;border-radius:6px;padding:2px 6px;font:inherit}
+.file{position:relative;overflow:hidden}
+.file input{position:absolute;inset:0;opacity:0;cursor:pointer}
+[hidden]{display:none!important}
+@media (max-width:900px){.wrap,.grid3{grid-template-columns:1fr}.proto{padding:6px 16px}.wrap,.page{padding:16px}#mapView{height:auto;min-height:0;grid-template-columns:1fr;gap:16px}.splitter{display:none}#mapView>.panel{overflow:visible}.mapwrap{height:460px}}
+</style>
+</head>
+<body>
+<header class="hdr" id="hdr">
+  <button class="brand" data-a="goFind" aria-label="Jordplan forside">
+    <img src="data:image/png;base64,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" alt="">
+    <span style="min-width:0"><span class="bt">Jordplan</span><span class="bs">en del af Danmarks Miljøportal</span></span>
+  </button>
+  <nav class="navs" id="mainnav" aria-label="Hovedmenu">
+    <button class="nav" id="n-find" data-a="goFind">Find modtager</button>
+    <button class="nav" id="n-mod" data-a="goMod">For jordmodtagere</button>
+    <button class="nav" id="n-att" data-a="goAtt">Jordplanattest</button>
+    <button class="nav" id="n-vid" data-a="goVid">Viden om jordhåndtering</button>
+  </nav>
+  <button class="userbtn" data-a="goUser" aria-label="Log ind eller se profil">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" style="flex-shrink:0"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg>
+    <span id="userLabel">Log ind</span>
+  </button>
+  <button class="menubtn" id="menuBtn" data-a="menu" aria-expanded="false" aria-controls="mainnav" aria-label="Åbn menu">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+  </button>
+</header>
+<div class="proto">Prototype · modtagere, personer og tal er fiktive eksempeldata · log-in er simuleret · kort: OpenStreetMap</div>
+
+<main class="wrap" id="mapView">
+  <section class="panel" id="side" aria-label="Søgning og resultater"></section>
+  <div class="splitter" id="splitter" role="separator" aria-orientation="vertical" aria-controls="side" tabindex="0" aria-label="Træk for at ændre bredden på listen. Dobbeltklik nulstiller." title="Træk for at ændre bredden – dobbeltklik nulstiller"></div>
+  <section class="mapwrap" aria-label="Kort over modtagere">
+    <div id="map"></div>
+    <div class="mapmsg" id="mapMsg" hidden>Kortet kunne ikke indlæses. Leaflet og kortfliser hentes fra internettet – tjek netværksforbindelsen.</div>
+    <div class="originhint" id="originHint" hidden>Klik på kortet for at angive, hvor jorden kommer fra</div>
+    <div class="mapcount" id="mapCount"></div>
+  </section>
+</main>
+<div id="page" hidden></div>
+<div id="modal"></div>
+<div id="toast"></div>
+
+<script>
+(function(){
+var TODAY = '2026-10-02';
+var KAT_TEK = ['Geoteknisk A-rapport påkrævet','Intaktjord, ler > 90 %','ICX-rapport påkrævet','Ingen kulbrinter','Ikke våd jord'];
+var KAT_OVR = ['Fuld anmeldelse og prøveflyttetest A','Kun lokale anvisninger','Registreret jord accepteres – skal prøvetages','Kun partier > 10.000 t'];
+var YD = [['sortering','Sortering'],['kalk','Kalkstabilisering'],['transport','Transport'],['proevetagning','Prøvetagning'],['opgravning','Opgravning'],['anmeldelse','Anmeldelse hos kommune']];
+var SVC = [['transport','Transport'],['proevetagning','Prøvetagning'],['opgravning','Opgravning'],['anmeldelse','Anmeldelse hos kommune']];
+var JT = [['ler','Ler'],['sand','Sand'],['silt','Silt'],['grus','Grus'],['fyld','Fyld'],['organisk','Organisk jord'],['muld','Muld']];
+var ND = [['aftale','Aftaledokumentation'],['proeve','Skabelon for prøvetagning']];
+var JT_ALL=['ler','sand','silt','grus','fyld','organisk','muld'];
+var ALLOWED = [0,1];
+var KOMMUNER=[['Allerød',55.855,12.32],['Furesø',55.795,12.36],['Rudersdal',55.83,12.45],['Hillerød',55.93,12.27],['Fredensborg',55.97,12.42],['Egedal',55.78,12.20],['Lyngby-Taarbæk',55.78,12.51],['Helsingør',56.02,12.56],['Gribskov',56.05,12.22],['Halsnæs',55.96,11.97],['Frederikssund',55.84,12.05],['Hørsholm',55.885,12.50]];
+function nearestKommune(lat,lng){var b=null,bd=1e9;KOMMUNER.forEach(function(k){var d=Math.pow(k[1]-lat,2)+Math.pow((k[2]-lng)*0.56,2);if(d<bd){bd=d;b=k[0];}});return b;}
+function distKm(a,b){var R=6371,toR=Math.PI/180,dLat=(b.lat-a.lat)*toR,dLng=(b.lng-a.lng)*toR,x=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(a.lat*toR)*Math.cos(b.lat*toR)*Math.sin(dLng/2)*Math.sin(dLng/2);return 2*R*Math.asin(Math.sqrt(x));}
+function kmTxt(m){return S.origin?distKm(S.origin,m).toLocaleString('da-DK',{maximumFractionDigits:1,minimumFractionDigits:1})+' km':'';}
+function blocked(m){return !!(S.origin&&m.restrict&&m.restrict.kommune&&S.origin.kommune!==m.restrict.kommune);}
+function restrictTxt(m){return m.restrict&&m.restrict.kommune?'Modtager kun jord fra '+m.restrict.kommune+' Kommune':'';}
+var MODS = [
+ {id:1,kommune:'Allerød',restrict:{kommune:'Allerød'},owner:'ullerup',pnr:'1012345678',name:'Ullerup Fodboldstadion',type:'gen',lat:55.8352,lng:12.2655,start:'2026-11-01',end:'2027-03-31',status:'ledig',lines:[{k:0,t:75000,p:115},{k:1,t:175000,p:65}],sam:'Intaktjord, ler > 90 %',tek:['Geoteknisk A-rapport påkrævet','Intaktjord, ler > 90 %'],ovr:['Fuld anmeldelse og prøveflyttetest A','Kun lokale anvisninger'],yd:{},jt:['ler'],kontakt:'johannes@ullerupstadion.dk',besk:'Terrænregulering af boldbaner ved Ullerup Stadion.',godk:'Kommunal planlovsgodkendelse, terrænregulering',docs:['Projektbeskrivelse Ullerup.pdf'],nd:{aftale:'Aftaleskabelon Ullerup.pdf',proeve:null}},
+ {id:2,kommune:'Allerød',restrict:{kommune:'Allerød'},owner:null,pnr:null,name:'Den kreative slange, legeplads',type:'gen',lat:55.8455,lng:12.2620,start:'2026-11-01',end:'2027-03-31',status:'booked',lines:[{k:0,t:75000,p:null}],sam:'Muldfri råjord',tek:[],ovr:['Kun lokale anvisninger'],yd:{},jt:['sand','muld'],kontakt:'[kontakt-e-mail]',besk:'',godk:'Kommunal tilladelse',docs:[],nd:{aftale:null,proeve:null}},
+ {id:3,kommune:'Allerød',restrict:null,owner:null,pnr:null,name:'Lynge støjvold',type:'gen',lat:55.8430,lng:12.2960,start:'2026-11-15',end:'2027-05-31',status:'afventer',lines:[{k:1,t:250000,p:null}],sam:'Blandet råjord',tek:['ICX-rapport påkrævet'],ovr:[],yd:{},jt:['ler','sand','fyld'],kontakt:'[kontakt-e-mail]',besk:'',godk:'Afventer kommunal tilladelse',docs:[],nd:{aftale:null,proeve:null}},
+ {id:4,kommune:'Allerød',restrict:null,owner:null,pnr:null,name:'RGS Nordafdeling, Lynge',type:'nyt',lat:55.8265,lng:12.3010,start:'2026-10-01',end:'2027-12-31',status:'ledig',lines:[{k:1,t:null,p:null},{k:2,t:null,p:null},{k:3,t:null,p:null}],sam:'Alle jordtyper',tek:[],ovr:['Registreret jord accepteres – skal prøvetages'],yd:{transport:true,proevetagning:true,opgravning:true,anmeldelse:true,sortering:true},jt:JT_ALL,kontakt:'[kontakt-e-mail]',besk:'',godk:'Miljøgodkendelse',docs:[],nd:{aftale:null,proeve:null}},
+ {id:5,kommune:'Furesø',restrict:null,owner:null,pnr:null,name:'Farumvej udbygning, Lyngevej',type:'gen',lat:55.8150,lng:12.3150,start:'2026-11-01',end:'2027-04-30',status:'ledig',lines:[{k:1,t:650000,p:null}],sam:'Råjord til vejopbygning',tek:[],ovr:[],yd:{kalk:true},jt:['ler','sand','grus','fyld'],kontakt:'[kontakt-e-mail]',besk:'',godk:'Vejmyndighedens tilladelse',docs:[],nd:{aftale:null,proeve:null}},
+ {id:6,kommune:'Fredensborg',restrict:null,owner:null,pnr:null,name:'Kokkedal, nyttiggørelse',type:'nyt',lat:55.9030,lng:12.5010,start:'2026-10-15',end:'2027-06-30',status:'ledig',lines:[{k:0,t:400000,p:null},{k:1,t:120000,p:null}],sam:'Råjord',tek:['Geoteknisk A-rapport påkrævet'],ovr:[],yd:{transport:true},jt:['ler','sand','silt'],kontakt:'[kontakt-e-mail]',besk:'',godk:'Kommunal tilladelse',docs:[],nd:{aftale:null,proeve:null}},
+ {id:7,kommune:'Furesø',restrict:null,owner:null,pnr:null,name:'Farum Modtageanlæg',type:'anl',lat:55.8075,lng:12.3720,start:'2026-01-01',end:'2027-12-31',status:'ledig',lines:[{k:0,t:null,p:null},{k:1,t:null,p:null},{k:2,t:null,p:null}],sam:'Alle jordtyper',tek:[],ovr:['Fuld anmeldelse og prøveflyttetest A'],yd:{sortering:true,anmeldelse:true},jt:JT_ALL,kontakt:'[kontakt-e-mail]',besk:'',godk:'Miljøgodkendelse',docs:[],nd:{aftale:null,proeve:null}},
+ {id:8,kommune:'Rudersdal',restrict:null,owner:null,pnr:null,name:'Holte Ressourceplads',type:'res',lat:55.8120,lng:12.4600,start:'2026-10-01',end:'2027-09-30',status:'ledig',lines:[{k:0,t:30000,p:null}],sam:'Sorteret råjord',tek:[],ovr:[],yd:{sortering:true},jt:['sand','grus'],kontakt:'[kontakt-e-mail]',besk:'',godk:'Kommunal tilladelse',docs:[],nd:{aftale:null,proeve:null}},
+ {id:10,kommune:'Allerød',restrict:{cvr:true},owner:null,pnr:null,name:'Privat terrænregulering, Blovstrød',type:'gen',lat:55.8700,lng:12.3500,start:'2026-10-01',end:'2027-06-30',status:'ledig',lines:[{k:0,t:200000,p:null}],sam:'Råjord',tek:[],ovr:[],yd:{},jt:['ler','sand'],kontakt:'[kontakt-e-mail]',besk:'',godk:'Kommunal tilladelse',docs:[],nd:{aftale:null,proeve:null}},
+ {id:11,kommune:'Allerød',restrict:null,owner:'ullerup',pnr:'1012345679',name:'Ullerup Sportsklub, træningsbaner',type:'gen',lat:55.8318,lng:12.2600,start:'2027-01-15',end:'2027-05-31',status:'ledig',lines:[{k:0,t:40000,p:null}],sam:'Muldfri råjord',tek:[],ovr:[],yd:{},jt:['sand'],kontakt:'johannes@ullerupstadion.dk',besk:'Nye træningsbaner.',godk:'Kommunal planlovsgodkendelse',docs:[],nd:{aftale:null,proeve:null}},
+ {id:9,kommune:'Lyngby-Taarbæk',restrict:null,owner:null,pnr:null,name:'Brede kartering',type:'kar',lat:55.7930,lng:12.5020,start:'2026-11-01',end:'2027-02-28',status:'ledig',lines:[{k:0,t:20000,p:null}],sam:'Ren råjord',tek:[],ovr:[],yd:{},jt:['muld','sand'],kontakt:'[kontakt-e-mail]',besk:'',godk:'Kommunal tilladelse',docs:[],nd:{aftale:null,proeve:null}},
+ {id:12,kommune:'Hillerød',restrict:null,owner:null,pnr:null,name:'Hillerød Nord, støjvold ved Frederiksborgvej',type:'gen',lat:55.9400,lng:12.3000,start:'2026-11-01',end:'2027-06-30',status:'ledig',lines:[{k:0,t:180000,p:null},{k:1,t:60000,p:null}],sam:'Råjord til støjvold',tek:[],ovr:[],yd:{transport:true},jt:['ler','sand'],kontakt:'[kontakt-e-mail]',besk:'',godk:'Kommunal tilladelse',docs:[],nd:{aftale:null,proeve:null}},
+ {id:13,kommune:'Helsingør',restrict:null,owner:null,pnr:null,name:'Helsingør Havn, kajudvidelse',type:'nyt',lat:56.0390,lng:12.6100,start:'2026-10-15',end:'2027-09-30',status:'ledig',lines:[{k:0,t:350000,p:null},{k:1,t:150000,p:null}],sam:'Råjord og havbundsnær silt',tek:[],ovr:[],yd:{},jt:['sand','silt','ler'],kontakt:'[kontakt-e-mail]',besk:'',godk:'Kommunal tilladelse',docs:[],nd:{aftale:null,proeve:null}},
+ {id:14,kommune:'Helsingør',restrict:null,owner:null,pnr:null,name:'Kvistgård Ressourceplads',type:'res',lat:56.0000,lng:12.5000,start:'2026-10-01',end:'2027-12-31',status:'ledig',lines:[{k:0,t:25000,p:85}],sam:'Sorteret sand og grus',tek:[],ovr:[],yd:{sortering:true},jt:['sand','grus'],kontakt:'[kontakt-e-mail]',besk:'',godk:'Kommunal tilladelse',docs:[],nd:{aftale:null,proeve:null}},
+ {id:15,kommune:'Helsingør',restrict:{kommune:'Helsingør'},owner:null,pnr:null,name:'Espergærde, landskabsbakke',type:'gen',lat:56.0000,lng:12.5600,start:'2026-11-01',end:'2027-03-31',status:'booked',lines:[{k:0,t:60000,p:null}],sam:'Muldfri råjord',tek:[],ovr:['Kun lokale anvisninger'],yd:{},jt:['muld','sand'],kontakt:'[kontakt-e-mail]',besk:'',godk:'Kommunal tilladelse',docs:[],nd:{aftale:null,proeve:null}},
+ {id:16,kommune:'Fredensborg',restrict:null,owner:null,pnr:null,name:'Humlebæk Modtageanlæg',type:'anl',lat:55.9650,lng:12.5200,start:'2026-01-01',end:'2027-12-31',status:'ledig',lines:[{k:0,t:null,p:null},{k:1,t:null,p:null},{k:2,t:null,p:null}],sam:'Alle jordtyper',tek:[],ovr:[],yd:{sortering:true,anmeldelse:true,proevetagning:true},jt:JT_ALL,kontakt:'[kontakt-e-mail]',besk:'',godk:'Kommunal tilladelse',docs:[],nd:{aftale:null,proeve:null}},
+ {id:17,kommune:'Fredensborg',restrict:null,owner:null,pnr:null,name:'Fredensborg, cykelsti og vold',type:'gen',lat:55.9750,lng:12.3950,start:'2027-01-01',end:'2027-08-31',status:'afventer',lines:[{k:1,t:90000,p:null}],sam:'Blandet råjord',tek:[],ovr:[],yd:{},jt:['ler','fyld'],kontakt:'[kontakt-e-mail]',besk:'',godk:'Kommunal tilladelse',docs:[],nd:{aftale:null,proeve:null}},
+ {id:18,kommune:'Hørsholm',restrict:null,owner:null,pnr:null,name:'Rungsted, kartering af kolonihaver',type:'kar',lat:55.8850,lng:12.5300,start:'2026-11-01',end:'2027-04-30',status:'ledig',lines:[{k:0,t:15000,p:120}],sam:'Ren muld',tek:[],ovr:[],yd:{},jt:['muld','sand'],kontakt:'[kontakt-e-mail]',besk:'',godk:'Kommunal tilladelse',docs:[],nd:{aftale:null,proeve:null}},
+ {id:19,kommune:'Gribskov',restrict:null,owner:null,pnr:null,name:'Gilleleje, kystsikring bagland',type:'nyt',lat:56.1150,lng:12.3100,start:'2026-10-15',end:'2027-10-31',status:'ledig',lines:[{k:0,t:220000,p:null}],sam:'Sand og grus',tek:[],ovr:[],yd:{transport:true},jt:['sand','grus'],kontakt:'[kontakt-e-mail]',besk:'',godk:'Kommunal tilladelse',docs:[],nd:{aftale:null,proeve:null}},
+ {id:20,kommune:'Gribskov',restrict:null,owner:null,pnr:null,name:'Helsinge, erhvervsområde Syd',type:'gen',lat:56.0150,lng:12.2000,start:'2026-12-01',end:'2027-09-30',status:'ledig',lines:[{k:0,t:120000,p:null},{k:1,t:80000,p:null}],sam:'Råjord til byggemodning',tek:[],ovr:[],yd:{kalk:true},jt:['ler','sand','silt'],kontakt:'[kontakt-e-mail]',besk:'',godk:'Kommunal tilladelse',docs:[],nd:{aftale:null,proeve:null}},
+ {id:21,kommune:'Gribskov',restrict:null,owner:null,pnr:null,name:'Græsted Ressourceplads',type:'res',lat:56.0650,lng:12.2850,start:'2026-10-01',end:'2027-12-31',status:'ledig',lines:[{k:0,t:30000,p:70}],sam:'Sorteret råjord',tek:[],ovr:[],yd:{sortering:true},jt:['sand','grus'],kontakt:'[kontakt-e-mail]',besk:'',godk:'Kommunal tilladelse',docs:[],nd:{aftale:null,proeve:null}},
+ {id:22,kommune:'Gribskov',restrict:{kommune:'Gribskov'},owner:null,pnr:null,name:'Tisvilde, terrænregulering',type:'gen',lat:56.0450,lng:12.0800,start:'2027-02-01',end:'2027-06-30',status:'afventer',lines:[{k:0,t:50000,p:null}],sam:'Ren sand',tek:[],ovr:['Kun lokale anvisninger'],yd:{},jt:['sand'],kontakt:'[kontakt-e-mail]',besk:'',godk:'Kommunal tilladelse',docs:[],nd:{aftale:null,proeve:null}},
+ {id:23,kommune:'Halsnæs',restrict:null,owner:null,pnr:null,name:'Frederiksværk Modtageanlæg',type:'anl',lat:55.9700,lng:12.0250,start:'2026-01-01',end:'2027-12-31',status:'ledig',lines:[{k:0,t:null,p:null},{k:1,t:null,p:null},{k:2,t:null,p:null},{k:3,t:null,p:null}],sam:'Alle jordtyper',tek:[],ovr:[],yd:{transport:true,proevetagning:true,opgravning:true,anmeldelse:true,sortering:true},jt:JT_ALL,kontakt:'[kontakt-e-mail]',besk:'',godk:'Kommunal tilladelse',docs:[],nd:{aftale:null,proeve:null}},
+ {id:24,kommune:'Halsnæs',restrict:null,owner:null,pnr:null,name:'Hundested, havnefront',type:'nyt',lat:55.9640,lng:11.8650,start:'2026-11-15',end:'2027-11-30',status:'ledig',lines:[{k:0,t:300000,p:null},{k:1,t:100000,p:null}],sam:'Råjord til opfyld',tek:[],ovr:[],yd:{},jt:['sand','silt'],kontakt:'[kontakt-e-mail]',besk:'',godk:'Kommunal tilladelse',docs:[],nd:{aftale:null,proeve:null}},
+ {id:25,kommune:'Hillerød',restrict:null,owner:null,pnr:null,name:'Skævinge, ny boldbane',type:'gen',lat:55.9100,lng:12.1500,start:'2027-01-15',end:'2027-05-31',status:'ledig',lines:[{k:0,t:45000,p:null}],sam:'Muldfri råjord',tek:[],ovr:[],yd:{},jt:['ler','muld'],kontakt:'[kontakt-e-mail]',besk:'',godk:'Kommunal tilladelse',docs:[],nd:{aftale:null,proeve:null}},
+ {id:26,kommune:'Frederikssund',restrict:null,owner:null,pnr:null,name:'Slangerup, omfartsvej',type:'gen',lat:55.8500,lng:12.1800,start:'2026-11-01',end:'2027-12-31',status:'ledig',lines:[{k:1,t:260000,p:null}],sam:'Råjord til vejopbygning',tek:[],ovr:[],yd:{kalk:true},jt:['ler','sand','fyld'],kontakt:'[kontakt-e-mail]',besk:'',godk:'Kommunal tilladelse',docs:[],nd:{aftale:null,proeve:null}},
+ {id:27,kommune:'Frederikssund',restrict:null,owner:null,pnr:null,name:'Frederikssund Syd, vejanlæg',type:'nyt',lat:55.8200,lng:12.0750,start:'2026-10-01',end:'2027-06-30',status:'booked',lines:[{k:0,t:400000,p:null},{k:1,t:200000,p:null}],sam:'Råjord',tek:[],ovr:[],yd:{transport:true},jt:['ler','sand','grus'],kontakt:'[kontakt-e-mail]',besk:'',godk:'Kommunal tilladelse',docs:[],nd:{aftale:null,proeve:null}},
+ {id:28,kommune:'Frederikssund',restrict:null,owner:null,pnr:null,name:'Jægerspris, kartering',type:'kar',lat:55.8550,lng:11.9900,start:'2026-11-01',end:'2027-03-31',status:'ledig',lines:[{k:0,t:10000,p:null}],sam:'Ren muld',tek:[],ovr:[],yd:{},jt:['muld'],kontakt:'[kontakt-e-mail]',besk:'',godk:'Kommunal tilladelse',docs:[],nd:{aftale:null,proeve:null}},
+ {id:29,kommune:'Egedal',restrict:{kommune:'Egedal'},owner:null,pnr:null,name:'Stenløse, rekreativt område',type:'gen',lat:55.7700,lng:12.1900,start:'2026-12-01',end:'2027-10-31',status:'ledig',lines:[{k:0,t:140000,p:null}],sam:'Råjord til bakker',tek:[],ovr:['Kun lokale anvisninger'],yd:{},jt:['ler','sand','muld'],kontakt:'[kontakt-e-mail]',besk:'',godk:'Kommunal tilladelse',docs:[],nd:{aftale:null,proeve:null}},
+ {id:30,kommune:'Egedal',restrict:null,owner:null,pnr:null,name:'Ølstykke Ressourceplads',type:'res',lat:55.7950,lng:12.1500,start:'2026-10-01',end:'2027-12-31',status:'ledig',lines:[{k:0,t:40000,p:95},{k:1,t:20000,p:60}],sam:'Sorteret råjord',tek:[],ovr:[],yd:{sortering:true,kalk:true},jt:['sand','grus','fyld'],kontakt:'[kontakt-e-mail]',besk:'',godk:'Kommunal tilladelse',docs:[],nd:{aftale:null,proeve:null}},
+ {id:31,kommune:'Rudersdal',restrict:null,owner:null,pnr:null,name:'Birkerød, golfbane-udvidelse',type:'gen',lat:55.8550,lng:12.4400,start:'2026-11-01',end:'2027-04-30',status:'ledig',lines:[{k:0,t:90000,p:40}],sam:'Intaktjord',tek:[],ovr:[],yd:{},jt:['ler','sand'],kontakt:'[kontakt-e-mail]',besk:'',godk:'Kommunal tilladelse',docs:[],nd:{aftale:null,proeve:null}}
+];
+var S = {screen:'forside',res:'0',type:'alle',from:TODAY,to:'2027-03-31',big:false,minT:100000,editMin:false,sort:false,kalk:false,full:false,svc:[],svcOpen:false,guide:false,jt:[],sel:1,user:null,pending:null,reason:'',agents:[],toast:'',contact:false,sent:false,cName:'',cMsg:'',cErr:false,mods:MODS,
+ cats:[{id:'lynge',name:'Lynge Mulighedskatalog',start:'2026-03-25',end:'2027-07-31',lat:55.8395,lng:12.2830,members:[1,2,3]}],
+ nk:'1',nt:'',np:'',lineErr:'',fileErr:'',attQ:'',att:'',newCat:'',showCatId:null,origin:null,pickOrigin:false,originOpen:false,agentModal:false,agentEmail:'',agentErr:false,myId:1,newDel:'',periodeTxt:'Periode angiver det tidsrum, jordmodtageren forventer at have åbent for modtagelse.',defMinT:100000,newKrav:'',newKravType:'teknisk'};
+
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function dk(iso){if(!iso)return '';var p=iso.split('-');return (+p[2])+'-'+(+p[1])+'-'+p[0];}
+function fmtT(t){return t==null?'Ingen grænse':t.toLocaleString('da-DK')+' t';}
+function total(m){var n=0;for(var i=0;i<m.lines.length;i++){if(m.lines[i].t==null)return null;n+=m.lines[i].t;}return n;}
+function klasser(m){var ks=[];m.lines.forEach(function(l){if(ks.indexOf(l.k)<0)ks.push(l.k);});ks.sort();return 'Klasse '+ks.join(', ');}
+function hasK(m,k){return m.lines.some(function(l){return l.k===k;});}
+function byId(id){return S.mods.find(function(m){return m.id===+id;});}
+function match(m){
+  if(m.restrict&&m.restrict.cvr)return false;
+  if(S.res==='0'&&!hasK(m,0))return false;
+  if(S.res==='1'&&!hasK(m,1))return false;
+  if(S.res==='23'&&!hasK(m,2)&&!hasK(m,3))return false;
+  if(S.type!=='alle'&&m.type!==S.type)return false;
+  if(S.from&&m.end<S.from)return false;
+  if(S.to&&m.start>S.to)return false;
+  var t=total(m);
+  if(S.big&&!(t==null||t>S.minT))return false;
+  if(S.jt.length&&!S.jt.some(function(j){return m.jt.indexOf(j)>=0;}))return false;
+  if(S.sort&&!m.yd.sortering)return false;
+  if(S.kalk&&!m.yd.kalk)return false;
+  if(S.svc.length&&!S.svc.every(function(k){return m.yd[k];}))return false;
+  return true;
+}
+function badgeOf(m){return m.status==='booked'?'Booked':m.status==='afventer'?'Afventer tilladelse':'Ledig';}
+function isFull(m){return SVC.every(function(x){return m.yd[x[0]];});}
+function noteOf(m){if(isFull(m))return 'Full service-anlæg';if(m.yd.kalk)return 'Kalkstabilisering tilbydes';var k=m.tek.concat(m.ovr);return k.length?k[0]:'Ingen særlige krav';}
+function sw(m){return 'sw t-'+m.type+(m.status!=='ledig'?' hollow':'');}
+function isMapScreen(){return S.screen==='forside'||S.screen==='resultater'||S.screen==='detalje';}
+function activeCat(){
+  if(S.showCatId)return S.cats.find(function(c){return c.id===S.showCatId;})||null;
+  if(S.screen==='detalje'){var sel=byId(S.sel);return S.cats.find(function(c){return c.members.indexOf(sel.id)>=0;})||null;}
+  return null;
+}
+function upd(id,fn){S.mods=S.mods.map(function(m){return m.id===id?fn(Object.assign({},m)):m;});}
+var tt;
+function flash(msg){S.toast=msg;renderToast();clearTimeout(tt);tt=setTimeout(function(){S.toast='';renderToast();},3200);}
+function agentText(){
+  var r={'0':'Klasse 0','1':'Klasse 1','23':'Klasse 2–3',alle:'Alle klasser'}[S.res];
+  var t=S.type==='alle'?'alle anlæg':{nyt:'nyttiggørelse',gen:'genanvendelse',anl:'modtageanlæg',res:'ressourcepladser',kar:'kartering'}[S.type];
+  return r+', '+t+', '+dk(S.from)+' – '+dk(S.to);
+}
+function addAgent(){S.agents=S.agents.concat([{id:Date.now(),txt:agentText()+(S.agentEmail?' → '+S.agentEmail:'')}]);flash('Søgeagenten er oprettet. Du får besked på e-mail, når nye modtagere matcher.');}
+
+var ICON_MAIL='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>';
+var ICON_CHECK='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#31815F" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M7 12l3 3 7-7"/></svg>';
+function opt(v,label,cur){return '<option value="'+esc(v)+'"'+(String(cur)===String(v)?' selected':'')+'>'+esc(label)+'</option>';}
+function legend(){return '<div class="legend" aria-label="Signaturforklaring"><span class="lg"><span class="sw t-nyt"></span>Nyttiggørelse</span><span class="lg"><span class="sw t-res"></span>Ressourcepladser</span><span class="lg"><span class="sw t-gen"></span>Genanvendelse</span><span class="lg"><span class="sw t-kar"></span>Kartering</span><span class="lg"><span class="sw t-anl"></span>Modtageanlæg</span><span class="lg"><span class="sw t-gen hollow"></span>Booket / afventer</span></div>';}
+
+function sideForside(){
+  var n=S.mods.filter(match).length;
+  return '<h1 class="h1">Find en jordmodtager</h1>'+
+  '<div class="originbox"><button type="button" class="foldbtn" data-a="originToggle" aria-expanded="'+S.originOpen+'" aria-controls="originBody"><span class="chev'+(S.originOpen?' open':'')+'"></span>Hvor kommer jorden fra? <span class="sm" style="font-weight:400">(valgfri)</span>'+(S.origin&&!S.originOpen?'<span class="dist" style="margin-left:auto">Punkt valgt</span>':'')+'</button>'+
+  (S.originOpen?'<div id="originBody" style="margin-top:8px"><p class="note" style="margin:0 0 8px">Markér et punkt på kortet for at se afstanden til hver modtager, og om du må aflevere, hvis modtageren kun tager jord fra egen kommune.</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn ghost" style="min-height:40px" data-a="pickOrigin" aria-pressed="'+S.pickOrigin+'">'+(S.pickOrigin?'Klik på kortet …':(S.origin?'Flyt punkt':'Vælg punkt på kortet'))+'</button>'+(S.origin?'<button type="button" class="link" style="font-size:14px" data-a="clearOrigin">Fjern punkt</button>':'')+'</div>'+(S.origin?'<p class="note" style="margin-top:6px">Punktet ligger i '+esc(S.origin.kommune)+' Kommune · afstande er i luftlinje</p>':'')+'</div>':'')+'</div>'+
+  '<label class="lbl" for="f-res">Hvilken ressource skal du af med?</label><select id="f-res" class="inp" data-f="res">'+opt('0','Ren jord (klasse 0)',S.res)+opt('1','Lettere forurenet jord (klasse 1)',S.res)+opt('23','Forurenet jord (klasse 2–3)',S.res)+opt('alle','Alle klasser',S.res)+'</select>'+
+  '<label class="lbl" for="f-type">Hvilken type anlæg vil du aflevere til?</label><select id="f-type" class="inp" data-f="type">'+opt('alle','Alle anlægstyper',S.type)+opt('nyt','Nyttiggørelse',S.type)+opt('gen','Genanvendelse',S.type)+opt('anl','Modtageanlæg',S.type)+opt('res','Ressourcepladser',S.type)+opt('kar','Kartering',S.type)+'</select>'+
+  '<fieldset class="fs"><legend class="lbl" style="margin-bottom:6px">Jordtype <span class="sm" style="font-weight:400">(valgfri)</span></legend><div class="chips">'+JT.map(function(j){return '<label class="chip"><input type="checkbox" data-f="jt" data-v="'+j[0]+'"'+(S.jt.indexOf(j[0])>=0?' checked':'')+'><span>'+j[1]+'</span></label>';}).join('')+'</div></fieldset>'+
+  '<div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:14px"><span style="font-size:14px;font-weight:500;display:inline-flex;align-items:center;gap:6px">Periode <span class="tip"><button type="button" class="tipbtn" aria-label="Om periode" aria-describedby="tip-periode">i</button><span class="tiptxt" role="tooltip" id="tip-periode">'+esc(S.periodeTxt)+'</span></span></span><button class="link" style="font-size:13px" data-a="fromNow">Fra nu</button></div>'+
+  '<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:6px"><label class="sm">Fra<input class="inp" type="date" value="'+S.from+'" data-f="from"></label><label class="sm">Til<input class="inp" type="date" value="'+S.to+'" data-f="to"></label></div>'+
+  '<div style="margin-top:12px">'+
+  '<div class="chk"><input type="checkbox" id="f-big" data-f="big"'+(S.big?' checked':'')+'><span><label for="f-big">Vis kun modtagere, der kan modtage store partier</label> (&gt; '+(S.editMin?'<input class="numinp" type="number" min="0" step="1000" value="'+S.minT+'" data-f="minT" aria-label="Mindste mængde i ton" id="minT">':'<button type="button" class="numbtn" data-a="editMin" title="Klik for at ændre mængden">'+S.minT.toLocaleString('da-DK')+'</button>')+' t)</span></div>'+
+  '<label class="chk"><input type="checkbox" data-f="sort"'+(S.sort?' checked':'')+'><span>Tilbyder sortering</span></label>'+
+  '<label class="chk"><input type="checkbox" data-f="kalk"'+(S.kalk?' checked':'')+'><span>Tilbyder kalkstabilisering</span></label>'+
+  '<label class="chk"><input type="checkbox" data-f="full"'+(S.svc.length===SVC.length?' checked':'')+'><span>Vis modtagere, der yder full service<span style="display:block;font-size:12px;color:#446470">Transport, prøvetagning, opgravning og anmeldelse hos kommune</span></span></label>'+
+  '<button type="button" class="link" style="font-size:13px;margin-left:28px" data-a="svcToggle" aria-expanded="'+S.svcOpen+'" aria-controls="svcList">'+(S.svcOpen?'▾':'▸')+' Vælg specifikke services'+(S.svc.length&&S.svc.length<SVC.length?' ('+S.svc.length+' valgt)':'')+'</button>'+
+  (S.svcOpen?'<div id="svcList" style="margin:2px 0 4px 28px">'+SVC.map(function(x){return '<label class="chk" style="margin:6px 0"><input type="checkbox" data-f="svc" data-v="'+x[0]+'"'+(S.svc.indexOf(x[0])>=0?' checked':'')+'><span>'+x[1]+'</span></label>';}).join('')+'</div>':'')+'</div>'+
+  '<button class="btn" style="width:100%;margin-top:12px" data-a="search">Søg modtagere ('+n+')</button>'+
+  '<div class="screen"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0B2D3B" stroke-width="1.8" stroke-linecap="round" style="flex-shrink:0"><circle cx="11" cy="11" r="7"/><path d="M21 21l-5-5"/></svg><div><div style="font-weight:600;font-size:17px">Jordscreening</div><p class="note" style="margin:4px 0 6px">Brug screeningsværktøjet og lær mere om din jord, og hvordan den kan nyttiggøres. Det kan spare dig tid og penge.</p><a href="https://jordscreening.miljoeportal.dk" target="_blank" rel="noopener" style="font-size:14px">Gå til jordscreening</a></div></div>'+legend();
+}
+function sideRes(){
+  var list=S.mods.filter(match), cat=activeCat();
+  var h='<button class="link" data-a="goFind">← Tilbage til søgning</button><h1 class="h1" style="margin-top:8px">Modtagere</h1>';
+  if(cat)h+='<p class="note">Viser '+esc(cat.name)+' sammen med søgeresultatet.</p>';
+  h+='<p class="note">'+list.length+(list.length===1?' modtager':' modtagere')+' med valgte kriterier</p>';
+  h+='<button class="link" style="margin-top:6px" data-a="agent">'+ICON_MAIL+'Opret søgeagent</button>';
+  if(S.agents.length){h+='<div style="background:#DFF2EB;border-radius:8px;padding:10px 12px;margin-top:8px"><div style="font-size:13px;font-weight:600">Dine søgeagenter</div>';S.agents.forEach(function(a){h+='<div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;gap:8px"><span>'+esc(a.txt)+'</span><button class="x" data-a="delAgent" data-v="'+a.id+'" aria-label="Slet søgeagent">×</button></div>';});h+='</div>';}
+  h+='<div style="margin-top:8px">';
+  if(!list.length)h+='<p style="padding:16px 0">Ingen modtagere matcher dine kriterier. Prøv at udvide perioden eller fjerne filtre – eller opret en søgeagent.</p>';
+  if(S.origin)list=list.slice().sort(function(a,b){return (blocked(a)-blocked(b))||(distKm(S.origin,a)-distKm(S.origin,b));});
+  list.forEach(function(m){
+    var bl=blocked(m);
+    h+='<button class="res-item'+(bl?' blocked':'')+'" data-a="open" data-v="'+m.id+'"><span class="rn"><span class="'+sw(m)+'"></span>'+esc(m.name)+(m.status!=='ledig'?'<span class="badge b-'+m.status+'">'+badgeOf(m)+'</span>':'')+(S.origin?'<span class="dist">'+kmTxt(m)+'</span>':'')+'</span>'+(bl?'<span class="blk">'+esc(restrictTxt(m))+' – du kan ikke aflevere herfra</span>':'')+'<span class="meta"><span>'+dk(m.start)+' – '+dk(m.end)+'</span><span>'+fmtT(total(m))+'</span><span>'+esc(noteOf(m))+'</span><span>'+klasser(m)+'</span></span></button>';
+  });
+  return h+'</div>'+legend();
+}
+function sideDet(){
+  var m=byId(S.sel), cat=activeCat(), krav=m.tek.concat(m.ovr);
+  var yd=(isFull(m)?'Full service: ':'')+(YD.filter(function(y){return m.yd[y[0]];}).map(function(y){return y[1];}).join(', ')||'Ingen ydelser angivet');
+  var jtTxt=JT.filter(function(j){return m.jt.indexOf(j[0])>=0;}).map(function(j){return j[1];}).join(', ')||'Ikke angivet';
+  var h='<button class="link" data-a="goRes">← Tilbage til søgeresultat</button>'+
+  '<div style="display:flex;align-items:center;gap:12px;margin-top:8px"><span class="'+sw(m)+'" style="width:28px;height:28px"></span><h1 class="h1" style="margin:0">'+esc(m.name)+'</h1></div>'+
+  '<div style="margin-top:8px"><span class="badge b-'+m.status+'">'+badgeOf(m)+'</span> <span class="note" style="margin-left:6px">'+dk(m.start)+' – '+dk(m.end)+'</span></div>'+
+  (restrictTxt(m)?'<div class="'+(blocked(m)?'blk':'rinfo')+'" style="margin-top:10px">'+esc(restrictTxt(m))+(blocked(m)?' – du kan ikke aflevere fra '+esc(S.origin.kommune)+' Kommune':'')+'</div>':'')+
+  (S.origin?'<p class="note" style="margin-top:8px">'+kmTxt(m)+' i luftlinje fra det valgte punkt</p>':'')+
+  '<div class="sec">Jordplads udbydes</div><table class="tbl"><thead><tr><th>Klasse</th><th>Mængde</th>'+(m.lines.some(function(l){return l.p!=null;})?'<th>Pris</th>':'')+'</tr></thead><tbody>';
+  var hasP=m.lines.some(function(l){return l.p!=null;});
+  m.lines.forEach(function(l){h+='<tr><td>Klasse '+l.k+'</td><td>'+fmtT(l.t)+'</td>'+(hasP?'<td>'+(l.p==null?'–':l.p+' kr./t')+'</td>':'')+'</tr>';});
+  h+='</tbody></table><p class="note" style="margin-top:6px">Pris pr. ton vises kun for modtagere, der tager betaling for at modtage jord, og som har angivet en pris.</p><p style="font-size:14px;margin:8px 0 0">Sammensætning: '+esc(m.sam)+'</p><div class="sec">Jordtyper, der modtages</div><p style="font-size:14px;margin:0">'+esc(jtTxt)+'</p><div class="sec">Krav</div>';
+  if(!krav.length)h+='<p class="note">Ingen særlige krav angivet.</p>';
+  krav.forEach(function(k){h+='<div style="display:flex;gap:8px;font-size:14px;margin:4px 0">'+ICON_CHECK+esc(k)+'</div>';});
+  h+='<div class="sec">Ydelser</div><p style="font-size:14px;margin:0">'+esc(yd)+'</p>'+
+  '<div class="sec">Kontakt</div><div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><span style="font-size:14px">'+esc(m.kontakt)+'</span><button class="btn ghost" data-a="openContact">Kontakt</button></div>'+
+  '<div class="sec">Godkendelser</div><p style="font-size:14px;margin:0">§ '+esc(m.godk)+'</p>';
+  if(m.nd&&(m.nd.aftale||m.nd.proeve)){h+='<div class="sec">Nødvendig dokumentation</div>';ND.forEach(function(d){if(m.nd[d[0]])h+='<div style="font-size:14px;margin:2px 0"><span class="badge b-doc">PDF</span>'+d[1]+': '+esc(m.nd[d[0]])+'</div>';});}
+  if(m.docs.length){h+='<div class="sec">Dokumenter</div>';m.docs.forEach(function(d){h+='<div style="font-size:14px"><span class="badge b-doc">PDF</span>'+esc(d)+'</div>';});}
+  if(cat){var rel=cat.members.filter(function(id){return id!==m.id;}).map(byId).filter(Boolean);
+    if(rel.length){h+='<div class="sec">Andre modtagesteder i '+esc(cat.name)+'</div>';rel.forEach(function(o){h+='<button class="res-item" style="padding:8px 0" data-a="open" data-v="'+o.id+'"><span class="rn" style="font-size:14px"><span class="'+sw(o)+'"></span>'+esc(o.name)+'</span><span class="meta"><span>'+fmtT(total(o))+'</span><span>'+klasser(o)+'</span></span></button>';});}}
+  return h+legend();
+}
+
+function pageLogin(){
+  var u=S.user, h='<div class="page"><h1 class="h1">'+(u?'Din profil':'Log ind på Jordplan')+'</h1><p class="note" style="font-size:15px;margin-bottom:20px">'+esc(S.reason)+'</p>';
+  if(!u){
+    h+='<div class="grid2"><div class="card"><div class="sec" style="margin:0">Virksomheder</div><h2 class="h2" style="margin:0">MitID Erhverv</h2><p class="note" style="font-size:15px">Jordproducenter, jordmodtagere, rådgivere og transportører logger ind med MitID Erhverv. Du får adgang til de modtagesteder, din virksomhed (CVR) ejer i modtagerregistret.</p><div><button class="btn dark" data-a="loginMit">Log ind med MitID Erhverv</button></div></div>'+
+    '<div class="card"><div class="sec" style="margin:0">Kommuner, regioner og DMP</div><h2 class="h2" style="margin:0">DMP brugerstyring</h2><p class="note" style="font-size:15px">Kommuner og regioner retter modtagerdata i modtagerregistret (et andet system). I Jordplan kan de oprette mulighedskataloger for projekter, hvor de er jordmodtager eller projektejer. Administratorer hos DMP retter systemindstillinger og tekster.</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-a="loginDmp">Log ind som kommune</button><button class="btn ghost" data-a="loginAdmin">Log ind som administrator</button></div></div></div>';
+  } else {
+    h+='<div class="card" style="max-width:520px"><dl class="kv"><dt>Logget ind som</dt><dd>'+esc(u.name)+'</dd><dt>Log-in</dt><dd>'+(u.role==='erhverv'?'MitID Erhverv':'DMP brugerstyring')+'</dd><dt>Rolle</dt><dd>'+({kommune:'Kommune (projektejer)',admin:'Administrator',erhverv:'Jordmodtager / erhvervsaktør'})[u.role]+'</dd></dl><div style="display:flex;gap:12px;flex-wrap:wrap"><button class="btn" data-a="goMod">'+({kommune:'Gå til mulighedskataloger',admin:'Gå til systemindstillinger',erhverv:'Gå til jeres annonce'})[u.role]+'</button><button class="btn ghost" data-a="logout">Log ud</button></div></div>';
+  }
+  return h+'</div>';
+}
+function pills(list,act){return list.map(function(k,i){return '<span class="pill">'+esc(k)+'<button class="x" data-a="'+act+'" data-v="'+i+'" aria-label="Fjern krav">×</button></span>';}).join('');}
+function pageBackend(){
+  var m=byId(S.myId), mine=S.mods.filter(function(x){return x.owner==='ullerup';});
+  var h='<div class="page"><div class="annhead"><button type="button" class="link" data-a="openGuide"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg>Sådan udfylder du bedst din annonce</button></div>'+
+  '<details class="fold"><summary>Hvad skal der til for at jord kan genanvendes som en ressource</summary><div class="foldbody">'+
+  '<p style="margin:0 0 12px;font-weight:600">Forudsætningerne, der gør jord til ressource frem for affald:</p><ul class="leaf">'+
+  ['Aftalegrundlag / man ved, hvad jorden skal bruges til','\u201cNormal praksis\u201d / sortering?','Integreret del af produktionsproces / alment gravearbejde?','Lovlig anvendelse / andre tilladelser','Det er sikkert, at jorden videreanvendes','Jorden kan anvendes direkte uden anden yderligere forarbejdning end hvad der er normal industriel praksis','Jorden fremstilles som en integreret del af en produktionsproces','Videreanvendelse er lovlig, dvs. at jorden lever op til alle relevante krav til produkt-, miljø- og sundhedsbeskyttelse for den pågældende anvendelse og ikke vil få generelle negative indvirkninger på miljøet eller menneskers sundhed'].map(function(t){return '<li>'+t+'</li>';}).join('')+
+  '</ul></div></details>'+
+  '<div class="pnr"><label class="lbl" for="b-pnr" style="margin:0">Modtageranlæg (P-nummer)</label><select id="b-pnr" class="inp" style="max-width:420px" data-f="myId">'+mine.map(function(x){return opt(x.id,x.name+' · P-nr. '+x.pnr,S.myId);}).join('')+'</select><p class="note">Ullerup Sportsklub har '+mine.length+' modtageranlæg. Hver annonce hører til ét anlæg (P-nummer).</p></div>'+
+  '<div class="grid3">'+
+  '<section class="panel grey" aria-label="Registerdata"><div style="display:flex;align-items:center;gap:12px"><span class="sw t-gen" style="width:30px;height:30px"></span><h1 class="h1" style="margin:0;font-size:22px">'+esc(m.name)+'</h1></div>'+
+  '<p style="font-size:14px;margin:8px 0 0">Skovparken 24, 3333 Ullerup</p><div class="sec">Ejer</div><p style="font-size:14px;margin:0">Ullerup Sportsklub<br>CVR: [CVR-nr.] · P-nr. '+esc(m.pnr)+'</p>'+
+  '<div class="sec">Godkendelser</div><p style="font-size:14px;margin:0">§ Kommunal planlovsgodkendelse, terrænregulering<br>Godkendt 2/3-26, Allerød Kommune (j.nr. 2323-2)</p>'+
+  '<div class="sec">Tilladte jordklasser og mængder</div><table class="tbl"><thead><tr><th>Klasse</th><th>Tilladt (t)</th><th>Modtaget (t)</th></tr></thead><tbody><tr><td>Klasse 0</td><td>100.000</td><td>25.000</td></tr><tr><td>Klasse 1</td><td>500.000</td><td>Ikke oplyst</td></tr></tbody></table>'+
+  '<div class="sec">Modtagers egne begrænsninger</div><p style="font-size:14px;margin:0">Modtager ikke våd jord. Modtager kun jord fra Allerød Kommune, partier &gt; 10.000 t.</p>'+
+  '<div style="border-top:1px solid #CEDBE0;margin-top:20px;padding-top:12px"><div style="font-weight:600;font-size:14px">Data fra det fællesoffentlige modtagerregister</div><p class="note" style="font-style:italic;margin-top:4px">Modtagerregistret redigeres af kommunerne og kan ikke ændres her. Er oplysningerne forkerte, skal du <button class="link" style="font-size:13px;min-height:0" data-a="contactKommune">kontakte kommunen</button>.</p></div></section>'+
+  '<section class="panel" style="background:#F5F7FA;border-color:#CEDBE0" aria-label="Annonce"><h1 class="h1">Jeres annonce på Jordplan</h1>'+
+  '<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px"><label class="sm">Status<select class="inp" data-f="b-status">'+opt('ledig','Ledig',m.status)+opt('booked','Booked',m.status)+opt('afventer','Afventer tilladelse',m.status)+'</select></label><label class="sm">Fra<input class="inp" type="date" value="'+m.start+'" data-f="b-start"></label><label class="sm">Til<input class="inp" type="date" value="'+m.end+'" data-f="b-end"></label></div>'+
+  '<div class="sec">Hvilken jordplads udbydes</div><table class="tbl"><thead><tr><th>Klasse</th><th>Mængde (t)</th><th>Kr. pr. ton</th><th><span class="vh">Handling</span></th></tr></thead><tbody>';
+  m.lines.forEach(function(l,i){h+='<tr><td>Klasse '+l.k+'</td><td>'+(l.t==null?'Ingen grænse':l.t.toLocaleString('da-DK'))+'</td><td>'+(l.p==null?'–':l.p)+'</td><td style="text-align:right"><button class="x" data-a="delLine" data-v="'+i+'" aria-label="Slet linje">×</button></td></tr>';});
+  h+='</tbody></table><div style="display:grid;grid-template-columns:110px minmax(0,1fr) minmax(0,1fr) auto;gap:8px;margin-top:10px;align-items:end">'+
+  '<label class="sm">Klasse<select class="inp" data-f="nk">'+opt('0','Klasse 0',S.nk)+opt('1','Klasse 1',S.nk)+opt('2','Klasse 2',S.nk)+opt('3','Klasse 3',S.nk)+'</select></label>'+
+  '<label class="sm">Mængde (t)<input class="inp" inputmode="numeric" value="'+esc(S.nt)+'" data-t="nt" placeholder="fx 165000"></label>'+
+  '<label class="sm">Kr. pr. ton<input class="inp" inputmode="numeric" value="'+esc(S.np)+'" data-t="np" placeholder="kun ved betaling"></label>'+
+  '<button class="btn ghost" data-a="addLine">Tilføj linje</button></div>'+(S.lineErr?'<div class="err" role="alert">'+esc(S.lineErr)+'</div>':'')+
+  '<div class="sec">Tekniske krav</div><div>'+pills(m.tek,'delTek')+'</div><select class="inp" style="margin-top:6px" data-f="addTek" aria-label="Tilføj teknisk krav fra katalog"><option value="">+ Tilføj teknisk krav fra katalog</option>'+KAT_TEK.filter(function(k){return m.tek.indexOf(k)<0;}).map(function(k){return opt(k,k,'');}).join('')+'</select>'+
+  '<div class="sec">Øvrige krav</div><div>'+pills(m.ovr,'delOvr')+'</div><select class="inp" style="margin-top:6px" data-f="addOvr" aria-label="Tilføj øvrigt krav fra katalog"><option value="">+ Tilføj øvrige krav fra katalog</option>'+KAT_OVR.filter(function(k){return m.ovr.indexOf(k)<0;}).map(function(k){return opt(k,k,'');}).join('')+'</select>'+
+  '<div class="sec">Jordtyper, vi modtager</div><div class="chips">'+JT.map(function(j){return '<label class="chip"><input type="checkbox" data-f="b-jt" data-v="'+j[0]+'"'+(m.jt.indexOf(j[0])>=0?' checked':'')+'><span>'+j[1]+'</span></label>';}).join('')+'</div>'+
+  '<div class="sec">Services</div><p class="note" style="margin:-4px 0 4px">Tilbyder I alle fire, vises I som full service.</p><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 12px">'+YD.filter(function(y){return SVC.some(function(x){return x[0]===y[0];});}).map(function(y){return '<label class="chk"><input type="checkbox" data-f="yd-'+y[0]+'"'+(m.yd[y[0]]?' checked':'')+'><span>'+y[1]+'</span></label>';}).join('')+'</div>'+
+  '<div class="sec">Fremhævede services</div><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 12px">'+YD.filter(function(y){return !SVC.some(function(x){return x[0]===y[0];});}).map(function(y){return '<label class="chk"><input type="checkbox" data-f="yd-'+y[0]+'"'+(m.yd[y[0]]?' checked':'')+'><span>'+y[1]+'</span></label>';}).join('')+'</div></section>'+
+  '<section style="display:flex;flex-direction:column;gap:24px"><div class="panel" style="background:#F5F7FA;border-color:#CEDBE0"><h2 class="h2">Yderligere info</h2>'+
+  '<label class="lbl" for="b-mail" style="margin-top:0">Kontakt-e-mail</label><input id="b-mail" class="inp" value="'+esc(m.kontakt)+'" data-t="b-kontakt">'+
+  '<label class="lbl" for="b-besk">Kort beskrivelse</label><textarea id="b-besk" class="inp" style="min-height:96px;resize:vertical" data-t="b-besk">'+esc(m.besk)+'</textarea>'+
+  '<div class="sec">Dokumenter</div>'+m.docs.map(function(d,i){return '<div style="font-size:14px;display:flex;justify-content:space-between;align-items:center"><span><span class="badge b-doc">PDF</span>'+esc(d)+'</span><button class="x" data-a="delDoc" data-v="'+i+'" aria-label="Fjern dokument">×</button></div>';}).join('')+
+  '<label class="btn ghost file" style="margin-top:8px;width:100%">Upload beskrivelse (PDF)<input type="file" accept=".pdf,application/pdf" data-f="file"></label>'+(S.fileErr?'<div class="err" role="alert">'+esc(S.fileErr)+'</div>':'')+
+  '<div class="sec">Nødvendig dokumentation</div><p class="note" style="margin:-4px 0 8px">Dokumenter, jordproducenten skal bruge for at kunne aflevere jord hos jer. Til prøvetagning henvises til Miljøstyrelsens officielle vejledning [link] og DMP\'s screeningsværktøj (under udvikling).</p>'+
+  ND.map(function(d){var v=m.nd[d[0]];return '<div class="ndrow"><div><div style="font-weight:600;font-size:14px">'+d[1]+'</div>'+(v?'<div style="font-size:13px"><span class="badge b-doc">PDF</span>'+esc(v)+'</div>':'<div style="font-size:13px"><span class="badge b-afventer">Mangler</span></div>')+'</div>'+(v?'<button class="x" data-a="delNd" data-v="'+d[0]+'" aria-label="Fjern '+d[1]+'">×</button>':'<label class="btn ghost file" style="min-height:36px;padding:0 12px;font-size:13px">Upload<input type="file" accept=".pdf,application/pdf" data-f="ndfile" data-v="'+d[0]+'" aria-label="Upload '+d[1]+'"></label>')+'</div>';}).join('')+'</div>'+
+  '<div class="panel"><p class="note" style="margin-bottom:12px">Ændringer slår igennem i søgningen med det samme.</p><div style="display:flex;flex-direction:column;gap:8px"><button class="btn" data-a="saveAd">Gem annonce</button><button class="btn ghost" data-a="previewAd">Se annoncen som jordproducent</button></div></div></section>'+
+  '</div></div>';
+  return h;
+}
+function pageKommune(){
+  var h='<div class="page"><h1 class="h1">Mulighedskataloger – '+esc(S.user.name)+'</h1><p class="note" style="font-size:15px;margin-bottom:8px">Saml modtagesteder, der hører til samme plan eller projekt, som kommunen er jordmodtager eller projektejer på. Kataloget vises på kortet og på hvert tilknyttet modtagested.</p><p class="note" style="font-size:15px;margin-bottom:20px">Rettelser i modtagesteders stamdata sker i modtagerregistret, ikke i Jordplan.</p><div class="grid2">';
+  S.cats.forEach(function(c){
+    h+='<div class="card"><h2 class="h2" style="margin:0">'+esc(c.name)+'</h2><p class="note">'+dk(c.start)+' – '+dk(c.end)+' · '+c.members.length+' modtagesteder</p><div class="sec" style="margin-top:8px">Tilknyttede modtagesteder</div>';
+    S.mods.forEach(function(m){h+='<label class="chk" style="margin:4px 0"><input type="checkbox" data-f="cat" data-v="'+c.id+':'+m.id+'"'+(c.members.indexOf(m.id)>=0?' checked':'')+'><span>'+esc(m.name)+'</span></label>';});
+    h+='<div class="sec" style="margin-top:8px">Delegeret til</div>'+((c.dele||[]).length?(c.dele||[]).map(function(d,i){return '<div style="font-size:14px;display:flex;justify-content:space-between;align-items:center"><span>'+esc(d)+'</span><button class="x" data-a="delDele" data-v="'+c.id+':'+i+'" aria-label="Fjern delegering">×</button></div>';}).join(''):'<p class="note">Ingen – kun kommunen kan redigere.</p>')+
+      '<div style="display:flex;gap:8px;margin-top:6px"><input class="inp" style="min-height:40px" placeholder="E-mail eller CVR på projektleder/rådgiver" data-t="newDel" aria-label="Deleger til"><button class="btn ghost" style="min-height:40px" data-a="addDele" data-v="'+c.id+'">Delegér</button></div>'+
+      '<div><button class="btn ghost" data-a="showCat" data-v="'+c.id+'">Vis på kortet</button></div></div>';
+  });
+  h+='<div class="card"><h2 class="h2" style="margin:0">Opret mulighedskatalog</h2><p class="note">Placeres ved sit første tilknyttede modtagested.</p><label class="lbl" for="k-name">Navn</label><input id="k-name" class="inp" value="'+esc(S.newCat)+'" data-t="newCat" placeholder="fx Smørum Mulighedskatalog"><div><button class="btn" style="margin-top:12px" data-a="addCat">Opret katalog</button></div></div></div></div>';
+  return h;
+}
+function pageAdmin(){
+  var h='<div class="page" style="max-width:900px"><h1 class="h1">Systemindstillinger</h1><p class="note" style="font-size:15px;margin-bottom:20px">Administratorer hos DMP retter systemindstillinger, tekster, grænseværdier og kravkatalog. Kravkataloget ejes af DMP og Region Hovedstaden.</p>'+
+  '<div class="card"><h2 class="h2" style="margin:0">Grænseværdier</h2><label class="lbl" for="a-min">Standardgrænse for \u201cstore partier\u201d (ton)</label><input id="a-min" class="inp" style="max-width:220px" type="number" step="1000" value="'+S.defMinT+'" data-t="defMinT">'+
+  '<h2 class="h2" style="margin:16px 0 0">Tekster</h2><label class="lbl" for="a-per">Hjælpetekst ved Periode</label><textarea id="a-per" class="inp" style="min-height:72px" data-t="periodeTxt">'+esc(S.periodeTxt)+'</textarea>'+
+  '<div><button class="btn" style="margin-top:12px" data-a="saveAdmin">Gem indstillinger</button></div></div>'+
+  '<div class="card" style="margin-top:24px"><h2 class="h2" style="margin:0">Kravkatalog</h2><div class="sec" style="margin-top:4px">Tekniske krav</div><div>'+KAT_TEK.map(function(k,i){return '<span class="pill">'+esc(k)+'<button class="x" data-a="delKat" data-v="tek:'+i+'" aria-label="Fjern krav">×</button></span>';}).join('')+'</div>'+
+  '<div class="sec">Øvrige krav</div><div>'+KAT_OVR.map(function(k,i){return '<span class="pill">'+esc(k)+'<button class="x" data-a="delKat" data-v="ovr:'+i+'" aria-label="Fjern krav">×</button></span>';}).join('')+'</div>'+
+  '<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:flex-end"><label class="sm">Type<select class="inp" data-f="newKravType">'+opt('teknisk','Teknisk',S.newKravType)+opt('oevrigt','Øvrigt',S.newKravType)+'</select></label><label class="sm" style="flex-grow:1">Nyt krav<input class="inp" data-t="newKrav" value="'+esc(S.newKrav)+'"></label><button class="btn ghost" data-a="addKat">Tilføj</button></div></div></div>';
+  return h;
+}
+function qrHtml(){var h='';for(var i=0;i<81;i++){var r=Math.floor(i/9),c=i%9;var fin=(r<3&&c<3)||(r<3&&c>5)||(r>5&&c<3);var dark=fin?!((r===1||r===7)&&(c===1||c===7)):((r*7+c*3+r*c)%3===0);h+='<span style="background:'+(dark?'#0B2D3B':'#fff')+'"></span>';}return h;}
+function pageAttest(){
+  var h='<div class="page" style="max-width:900px"><h1 class="h1">Jordplanattest</h1><p class="note" style="font-size:15px">Slå en attest op med ID eller QR-kode for at se den udstedte version.</p>'+
+  '<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:flex-end"><label class="sm" style="flex-grow:1;max-width:320px">Attest-ID<input class="inp" value="'+esc(S.attQ)+'" data-t="attQ" placeholder="fx 3232433-1"></label><button class="btn" data-a="showAtt">Vis attest</button><button class="link" data-a="demoAtt">Brug eksempel-ID 3232433-1</button></div>';
+  if(S.att==='none')h+='<div class="err" role="alert" style="font-size:15px;margin-top:12px">Attesten findes ikke. Kontroller ID\'et.</div>';
+  if(S.att==='ok')h+='<article class="attest" aria-label="Jordplanattest 3232433-1"><div style="display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;border-bottom:1px solid #A6B9C0;padding-bottom:16px"><div><div style="font-size:26px;font-weight:700">Jordplanattest</div><div style="font-size:14px;margin-top:4px"><b>Producent:</b> BygByg A/S (CVR: [CVR-nr.])<br><b>Modtager:</b> Køge Støjvold (CVR: [CVR-nr.]) <span class="ok">✓ Godkendt i modtagerregister</span><br>Aftalt genanvendelse og jordhåndtering</div></div><div style="display:flex;gap:16px;align-items:center"><div style="font-size:13px">ID: 3232433-1<br>23/12-26<br>jordplan.dk</div><div class="qr" aria-label="QR-kode">'+qrHtml()+'</div></div></div>'+
+  '<div class="sec">Dokumentation – jordhåndtering</div><p style="font-size:14px;margin:0"><b>Anmelder:</b> BygByg A/S · <b>Kommune:</b> Silkeborg</p><div style="overflow-x:auto;margin-top:8px"><table class="tbl"><thead><tr><th>Sagsnr.</th><th>Type</th><th>Køredatoer</th><th>Klasse</th><th>Modtager</th><th>Transportør</th><th>Mængde (t)</th></tr></thead><tbody><tr><td>23242-1</td><td>Registreret</td><td>25/1-26 til 25/3-26</td><td>0 ✓</td><td>Køge støjvold</td><td>FSA A/S</td><td>65.000</td></tr><tr><td>23131-5</td><td>Anvist</td><td>1/3-26 til 25/3-26</td><td>1 ✓</td><td>Køge støjvold</td><td>FSA A/S ✓</td><td>15.000</td></tr></tbody></table></div><p class="ok" style="margin:8px 0 0">✓ Modtager godkendt til prøvetagede stoffer · ✓ Godkendt transportør (Affaldsregister)</p>'+
+  '<div class="sec">Dokumentation – jord</div><div class="grid2"><div><div class="plot" aria-label="Opgravningslokalitet med delområder"><div class="delomr" style="left:6%;top:56%;width:22%;height:30%">M1</div><div class="delomr" style="left:38%;top:12%;width:18%;height:34%">M2</div><div class="delomr" style="left:56%;top:12%;width:18%;height:34%">M3</div><div class="delomr" style="left:74%;top:12%;width:18%;height:34%">M4</div><div class="delomr" style="left:38%;top:46%;width:18%;height:34%">M5</div><div class="delomr" style="left:56%;top:46%;width:18%;height:34%">M6</div><div class="delomr" style="left:74%;top:46%;width:18%;height:34%">M7</div></div>'+
+  '<div class="sec">DMP-screening</div><dl class="kv" style="grid-template-columns:200px 1fr"><dt>V1, V2, lokaliseret</dt><dd>Nej</dd><dt>UIK, UFK, UEK</dt><dd>Nej</dd><dt>Områdeklassificeret</dt><dd>Ja</dd><dt>Offentlig / privat vej</dt><dd>Ja</dd><dt>Invasive arter</dt><dd>Nej</dd></dl></div>'+
+  '<div><dl class="kv"><dt>Adresse</dt><dd>Åmosevej 15, 5740 Sdr. Billum</dd><dt>Matrikel</dt><dd>14b, Billum Overdrev</dd><dt>Kommune</dt><dd>Silkeborg</dd><dt>Ejer / bygherre</dt><dd>BygByg A/S</dd><dt>Historik</dt><dd>Gartneri (1930–1990), fritidslandbrug (1990–)</dd><dt>Jordtype</dt><dd>Fyldjord</dd><dt>Geoteknik</dt><dd>Ingen analyse</dd><dt>Beregnede mængder</dt><dd>Klasse 0: 65.000 t<br>Klasse 1: 15.000 t</dd></dl></div></div>'+
+  '<div class="sec">Prøvetagning</div><p style="font-size:14px;margin:0 0 6px">Prøvetager: [navn], Jordprøve A/S</p><table class="tbl" style="max-width:520px"><thead><tr><th>Batch</th><th>Laboratorium</th><th>Klasser</th><th>Dato</th></tr></thead><tbody><tr><td>323-2</td><td>EUROFUN</td><td>0, 1 (55 stk.)</td><td>12/1-2026</td></tr><tr><td>323-1</td><td>EUROFUN</td><td>0, 1 (12 stk.)</td><td>13/1-2026</td></tr></tbody></table>'+
+  '<div style="background:#E6EDF0;border-radius:4px;padding:12px;margin-top:20px;font-size:13px">Jordplanattesten er udstedt automatisk af Jordplan på baggrund af data i de nationale anmeldelses- og modtagerregistre. Screeninger foretaget på jordscreening.miljoeportal.dk. Data udtrukket 23/12-26 kl. 12.15.</div></article>';
+  return h+'</div>';
+}
+function pageViden(){
+  return '<div class="page"><h1 class="h1">Viden om jordhåndtering</h1><p class="note" style="font-size:15px;margin-bottom:20px">Jordplan samler vejen til eksisterende viden og værktøjer – vi bygger ikke det, der allerede findes.</p><div class="grid2"><div class="card"><h2 class="h2" style="margin:0">Jordhåndtering.dk</h2><p class="note" style="font-size:15px">Vejledning og gode eksempler på cirkulær og effektiv håndtering af overskudsjord.</p><span class="note">[link til jordhåndtering.dk]</span></div><div class="card"><h2 class="h2" style="margin:0">Jordscreening</h2><p class="note" style="font-size:15px">DMP\'s screeningsværktøj viser, hvad der vides om en lokalitet, før der graves.</p><a href="https://jordscreening.miljoeportal.dk" target="_blank" rel="noopener">Gå til jordscreening</a></div></div></div>';
+}
+function renderModal(){
+  var el=document.getElementById('modal');
+  if(S.guide){el.innerHTML='<div class="overlay"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="g-title" style="width:min(560px,100%)"><h2 class="h2" id="g-title">Sådan udfylder du bedst din annonce</h2><ol class="guide">'+
+    '<li><b>Status og periode.</b> Hold status opdateret. Periode er det tidsrum, I forventer at have åbent for modtagelse.</li>'+
+    '<li><b>Jordplads pr. klasse.</b> Angiv realistiske mængder. Pris angives kun, hvis I tager betaling for at modtage jord.</li>'+
+    '<li><b>Krav fra kataloget.</b> Vælg krav fra kataloget frem for fritekst, så jordproducenter kan sammenligne.</li>'+
+    '<li><b>Jordtyper og ydelser.</b> De bruges direkte i søgefiltrene – manglende valg betyder, at I ikke bliver fundet.</li>'+
+    '<li><b>Nødvendig dokumentation.</b> Upload aftaledokumentation og skabelon for prøvetagning.</li>'+
+    '<li><b>Registerdata.</b> Godkendelser og tilladte mængder kommer fra modtagerregistret og rettes hos kommunen.</li>'+
+    '</ol><p class="note">Vejledningen er et udkast i prototypen.</p><div style="display:flex;justify-content:flex-end;margin-top:16px"><button class="btn" data-a="closeGuide">Luk</button></div></div></div>';return;}
+  if(S.agentModal){el.innerHTML='<div class="overlay"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="ag-title"><h2 class="h2" id="ag-title">Opret søgeagent</h2><p class="note" style="font-size:15px">Du får en e-mail, når nye modtagere matcher: '+esc(agentText())+'. Log-in er ikke nødvendigt.</p><label class="lbl" for="ag-mail">Din e-mail</label><input id="ag-mail" class="inp" type="email" data-t="agentEmail" value="'+esc(S.agentEmail)+'">'+(S.agentErr?'<div class="err" role="alert">Angiv en gyldig e-mailadresse.</div>':'')+'<div style="display:flex;gap:12px;margin-top:16px;justify-content:flex-end"><button class="btn ghost" data-a="closeAgent">Annuller</button><button class="btn" data-a="saveAgent">Opret søgeagent</button></div></div></div>';return;}
+  if(!S.contact){el.innerHTML='';return;}
+  var m=byId(S.sel);
+  var inner=S.sent?'<h2 class="h2">Henvendelsen er sendt</h2><p style="margin:0 0 16px">Kvittering: din besked er sendt til '+esc(m.kontakt)+'. Du modtager en kopi på e-mail.</p><div style="display:flex;justify-content:flex-end"><button class="btn" data-a="closeContact">Luk</button></div>'
+   :'<h2 class="h2">Kontakt '+esc(m.name)+'</h2><p class="note">Din henvendelse sendes til '+esc(m.kontakt)+'.</p><label class="lbl" for="c-name">Dit navn og virksomhed</label><input id="c-name" class="inp" value="'+esc(S.cName)+'" data-t="cName"><label class="lbl" for="c-msg">Besked</label><textarea id="c-msg" class="inp" style="min-height:110px" data-t="cMsg" placeholder="Mængde, jordklasse, periode og opgravningssted">'+esc(S.cMsg)+'</textarea>'+(S.cErr?'<div class="err" role="alert">Skriv en besked, før du sender.</div>':'')+'<div style="display:flex;gap:12px;margin-top:16px;justify-content:flex-end"><button class="btn ghost" data-a="closeContact">Annuller</button><button class="btn" data-a="sendContact">Send henvendelse</button></div>';
+  el.innerHTML='<div class="overlay"><div class="modal" role="dialog" aria-modal="true" aria-label="Kontakt modtager">'+inner+'</div></div>';
+}
+function renderToast(){document.getElementById('toast').innerHTML=S.toast?'<div class="toast" role="status">'+esc(S.toast)+'</div>':'';}
+
+/* ---------- Kort (Leaflet) ---------- */
+var map=null, layer=null, base=null, lastFocus=null;
+function makeBase(){
+  return L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>-bidragydere'});
+}
+function setBase(){if(!map)return;if(base)map.removeLayer(base);base=makeBase();base.addTo(map);}
+var B={minLat:55.75,maxLat:56.13,minLng:11.82,maxLng:12.65};
+var TOWNS=[['Hillerød',55.928,12.300],['Helsingør',56.030,12.590],['Fredensborg',55.975,12.405],['Gilleleje',56.120,12.295],['Helsinge',56.022,12.198],['Frederiksværk',55.970,12.040],['Hundested',55.966,11.880],['Frederikssund',55.840,12.065],['Stenløse',55.768,12.195],['Hørsholm',55.881,12.502],['Lynge',55.839,12.283],['Lillerød',55.875,12.345],['Farum',55.808,12.36],['Birkerød',55.847,12.428],['Holte',55.818,12.472],['Kokkedal',55.906,12.47],['Værløse',55.782,12.37],['Ganløse',55.792,12.265]];
+function xy(lat,lng){return {x:(lng-B.minLng)/(B.maxLng-B.minLng)*100,y:(B.maxLat-lat)/(B.maxLat-B.minLat)*100};}
+var sketch=false;
+var ORIGIN_SVG='<svg width="28" height="36" viewBox="0 0 28 36" aria-hidden="true"><path d="M14 35C14 35 26 21 26 13A12 12 0 0 0 2 13C2 21 14 35 14 35Z" fill="#0B2D3B" stroke="#fff" stroke-width="2"/><circle cx="14" cy="13" r="4.5" fill="#fff"/></svg>';
+function setOriginAt(lat,lng){S.origin={id:'kort',name:'det valgte punkt',lat:lat,lng:lng,kommune:nearestKommune(lat,lng)};S.pickOrigin=false;render(true);}
+function sketchMap(shown,cat,isDet,sel){
+  var h='<div style="position:absolute;inset:0;background:#E6EDF0"><svg viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%" aria-hidden="true">';
+  if(cat){var c=xy(cat.lat,cat.lng);cat.members.map(byId).filter(Boolean).forEach(function(m){var p=xy(m.lat,m.lng);h+='<line x1="'+c.x+'" y1="'+c.y+'" x2="'+p.x+'" y2="'+p.y+'" stroke="#7b2cbf" stroke-width="3" vector-effect="non-scaling-stroke"/>';});}
+  h+='</svg>';
+  TOWNS.forEach(function(t){var p=xy(t[1],t[2]);h+='<span style="position:absolute;left:'+p.x+'%;top:'+p.y+'%;transform:translate(-50%,-50%);font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#567480;pointer-events:none">'+t[0]+'</span>';});
+  if(cat){var q=xy(cat.lat,cat.lng);h+='<div style="position:absolute;left:'+q.x+'%;top:'+q.y+'%;transform:translate(-17px,-15px);display:flex;gap:8px;align-items:flex-start;pointer-events:none"><svg width="34" height="30" viewBox="0 0 24 21"><path d="M1 3a2 2 0 0 1 2-2h6l2 3h10a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2z" fill="#7b2cbf"/></svg><div class="cattip" style="background:#fff;font-size:13px"><b>'+esc(cat.name)+'</b><br>'+dk(cat.start)+' – '+dk(cat.end)+'</div></div>';}
+  shown.forEach(function(m){var p=xy(m.lat,m.lng),tt=m.name+(restrictTxt(m)?' – '+restrictTxt(m):'');h+='<button class="lmk t-'+m.type+(m.status!=='ledig'?' hollow':'')+(blocked(m)?' blocked':'')+(isDet&&m.id===sel.id?' sel':'')+'" style="position:absolute;left:'+p.x+'%;top:'+p.y+'%;transform:translate(-50%,-50%);border:0;padding:0;background:transparent" data-a="open" data-v="'+m.id+'" title="'+esc(tt)+'" aria-label="'+esc(tt)+'"></button>'+(S.origin?'<span class="distlbl'+(blocked(m)?' off':'')+'" style="position:absolute;left:calc('+p.x+'% + 14px);top:'+p.y+'%;transform:translateY(-50%);pointer-events:none">'+kmTxt(m)+'</span>':'');});
+  if(S.origin){var po=xy(S.origin.lat,S.origin.lng);h+='<span style="position:absolute;left:'+po.x+'%;top:'+po.y+'%;transform:translate(-14px,-34px);pointer-events:none" title="Oprindelse">'+ORIGIN_SVG+'</span>';}
+  h+='<div class="sm" style="position:absolute;right:12px;top:12px;background:#fff;border:1px solid #CEDBE0;border-radius:8px;padding:6px 10px;max-width:260px">Skitsekort. Det rigtige kort (OpenStreetMap) vises i den downloadede HTML-fil.</div></div>';
+  var mp=document.getElementById('map');mp.innerHTML=h;mp.style.cursor=S.pickOrigin?'crosshair':'';
+  document.getElementById('originHint').hidden=!S.pickOrigin;
+}
+function initMap(){
+  if(!window.L){sketch=true;updateMap();return;}
+  map=L.map('map',{zoomControl:true}).setView([55.835,12.33],12);
+  setBase();
+  layer=L.layerGroup().addTo(map);
+  map.on('click',function(e){if(!S.pickOrigin)return;setOriginAt(e.latlng.lat,e.latlng.lng);});
+  updateMap(true);
+}
+function icon(m,sel){return L.divIcon({className:'mkicon',html:'<span class="lmk t-'+m.type+(m.status!=='ledig'?' hollow':'')+(blocked(m)?' blocked':'')+(sel?' sel':'')+'"></span>',iconSize:[26,26],iconAnchor:[13,13]});}
+function updateMap(fit){
+  if(!map&&!sketch)return;
+  var list=S.mods.filter(match), isDet=S.screen==='detalje', sel=byId(S.sel), cat=activeCat();
+  var shown=list.slice();
+  function add(m){if(m&&shown.indexOf(m)<0)shown.push(m);}
+  if(isDet)add(sel);
+  if(cat)cat.members.forEach(function(id){add(byId(id));});
+  if(sketch){sketchMap(shown,cat,isDet,sel);document.getElementById('mapCount').textContent=shown.length+' modtagesteder vist';return;}
+  layer.clearLayers();
+  if(cat){
+    cat.members.map(byId).filter(Boolean).forEach(function(m){L.polyline([[cat.lat,cat.lng],[m.lat,m.lng]],{color:'#7b2cbf',weight:3,opacity:.85}).addTo(layer);});
+    L.marker([cat.lat,cat.lng],{icon:L.divIcon({className:'mkicon',html:'<svg width="34" height="30" viewBox="0 0 24 21"><path d="M1 3a2 2 0 0 1 2-2h6l2 3h10a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2z" fill="#7b2cbf" stroke="#fff" stroke-width="1"/></svg>',iconSize:[34,30],iconAnchor:[17,15]}),keyboard:false})
+      .bindTooltip('<b>'+esc(cat.name)+'</b><br>'+dk(cat.start)+' – '+dk(cat.end),{permanent:true,direction:'right',offset:[18,0],className:'cattip'}).addTo(layer);
+  }
+  shown.forEach(function(m){
+    var mk=L.marker([m.lat,m.lng],{icon:icon(m,isDet&&m.id===sel.id),title:m.name,alt:m.name,riseOnHover:true});
+    mk.bindTooltip('<b>'+esc(m.name)+'</b><br>'+klasser(m)+(restrictTxt(m)?'<br><span style="color:#791422">'+esc(restrictTxt(m))+'</span>':''),{direction:'top',offset:[0,-12]});
+    if(S.origin)L.marker([m.lat,m.lng],{icon:L.divIcon({className:'mkicon',html:'<span class="distlbl'+(blocked(m)?' off':'')+'">'+kmTxt(m)+'</span>',iconSize:[60,18],iconAnchor:[-14,9]}),interactive:false,keyboard:false}).addTo(layer);
+    mk.on('click',function(){act.open(m.id);});
+    mk.addTo(layer);
+  });
+  if(S.origin){L.marker([S.origin.lat,S.origin.lng],{icon:L.divIcon({className:'mkicon',html:ORIGIN_SVG,iconSize:[28,36],iconAnchor:[14,34]}),keyboard:false}).bindTooltip('Oprindelse: '+esc(S.origin.name),{direction:'top',offset:[0,-30]}).addTo(layer);}
+  document.getElementById('originHint').hidden=!S.pickOrigin;
+  document.getElementById('map').style.cursor=S.pickOrigin?'crosshair':'';
+  document.getElementById('mapCount').textContent=shown.length+' modtagesteder vist';
+  if(isDet&&lastFocus!==sel.id){lastFocus=sel.id;map.flyTo([sel.lat,sel.lng],Math.max(map.getZoom(),13),{duration:.6});}
+  else if(fit&&shown.length){lastFocus=null;var b=L.latLngBounds(shown.map(function(m){return [m.lat,m.lng];}));if(cat)b.extend([cat.lat,cat.lng]);if(S.origin)b.extend([S.origin.lat,S.origin.lng]);map.fitBounds(b,{padding:[60,60],maxZoom:14});}
+}
+
+/* ---------- Render ---------- */
+function render(fit){
+  var hd=document.getElementById('hdr');if(hd.classList.contains('open')){hd.classList.remove('open');var mb=document.getElementById('menuBtn');mb.setAttribute('aria-expanded','false');mb.setAttribute('aria-label','Åbn menu');}
+  var mapScr=isMapScreen();
+  document.getElementById('n-find').className='nav'+(mapScr?' on':'');
+  document.getElementById('n-mod').className='nav'+(S.screen==='backend'||S.screen==='kommune'||S.screen==='admin'?' on':'');
+  document.getElementById('n-att').className='nav'+(S.screen==='attest'?' on':'');
+  document.getElementById('n-vid').className='nav'+(S.screen==='viden'?' on':'');
+  document.getElementById('userLabel').textContent=S.user?S.user.name:'Log ind';
+  var mv=document.getElementById('mapView'), pg=document.getElementById('page');
+  var wasHidden=mv.hidden;
+  mv.hidden=!mapScr; pg.hidden=mapScr;
+  if(mapScr){
+    document.getElementById('side').innerHTML=S.screen==='forside'?sideForside():S.screen==='resultater'?sideRes():sideDet();
+    if(map&&wasHidden)setTimeout(function(){map.invalidateSize();},0);
+    updateMap(fit);
+  } else {
+    pg.innerHTML=S.screen==='login'?pageLogin():S.screen==='backend'?pageBackend():S.screen==='kommune'?pageKommune():S.screen==='admin'?pageAdmin():S.screen==='attest'?pageAttest():pageViden();
+  }
+  renderModal(); renderToast();
+}
+function go(screen,fit){S.screen=screen;S.contact=false;render(fit);window.scrollTo(0,0);}
+
+var act={
+  closeAgent:function(){S.agentModal=false;renderModal();},
+  saveAgent:function(){if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(S.agentEmail.trim())){S.agentErr=true;renderModal();return;}S.agentModal=false;addAgent();render();},
+  originToggle:function(){S.originOpen=!S.originOpen;if(!S.originOpen)S.pickOrigin=false;render();},
+  pickOrigin:function(){S.pickOrigin=!S.pickOrigin;render();},
+  clearOrigin:function(){S.origin=null;S.pickOrigin=false;render(true);},
+  addDele:function(cid){var v=S.newDel.trim();if(!v)return;S.cats=S.cats.map(function(c){return c.id===cid?Object.assign({},c,{dele:(c.dele||[]).concat([v])}):c;});S.newDel='';flash('Rollen er delegeret');render();},
+  delDele:function(v){var p=v.split(':');S.cats=S.cats.map(function(c){return c.id===p[0]?Object.assign({},c,{dele:(c.dele||[]).filter(function(_,i){return i!==+p[1];})}):c;});render();},
+  saveAdmin:function(){var v=parseInt(S.defMinT,10);if(!isNaN(v)&&v>=0){S.defMinT=v;S.minT=v;}flash('Indstillingerne er gemt');render();},
+  delKat:function(v){var p=v.split(':'),arr=p[0]==='tek'?KAT_TEK:KAT_OVR;arr.splice(+p[1],1);render();},
+  addKat:function(){var v=S.newKrav.trim();if(!v)return;(S.newKravType==='teknisk'?KAT_TEK:KAT_OVR).push(v);S.newKrav='';flash('Kravet er tilføjet til kataloget');render();},
+  openGuide:function(){S.guide=true;renderModal();},
+  closeGuide:function(){S.guide=false;renderModal();},
+  delNd:function(k){upd(S.myId,function(m){m.nd=Object.assign({},m.nd);m.nd[k]=null;return m;});render();},
+  editMin:function(){S.editMin=true;render();var i=document.getElementById('minT');if(i){i.focus();i.select();}},
+  svcToggle:function(){S.svcOpen=!S.svcOpen;render();},
+  menu:function(){var h=document.getElementById('hdr'),o=!h.classList.contains('open');h.classList.toggle('open',o);var b=document.getElementById('menuBtn');b.setAttribute('aria-expanded',o);b.setAttribute('aria-label',o?'Luk menu':'Åbn menu');},
+  goFind:function(){S.showCatId=null;go('forside',true);},
+  goRes:function(){go('resultater',true);},
+  goAtt:function(){go('attest');}, goVid:function(){go('viden');},
+  goMod:function(){if(!S.user){S.pending='mod';S.reason='Jordmodtagere logger ind med MitID Erhverv. Kommuner, regioner og DMP logger ind via DMP brugerstyring.';go('login');return;}go(S.user.role==='kommune'?'kommune':S.user.role==='admin'?'admin':'backend');},
+  goUser:function(){S.pending=null;S.reason=S.user?'':'Vælg log-in efter, hvem du repræsenterer.';go('login');},
+  search:function(){S.showCatId=null;go('resultater',true);},
+  fromNow:function(){S.from=TODAY;render(true);},
+  open:function(id){S.sel=+id;S.sent=false;S.cMsg='';S.cErr=false;S.showCatId=null;go('detalje');},
+  agent:function(){S.agentModal=true;S.agentErr=false;renderModal();var e=document.getElementById('ag-mail');if(e)e.focus();},
+  delAgent:function(id){S.agents=S.agents.filter(function(a){return a.id!==+id;});flash('Søgeagenten er slettet');render();},
+  loginMit:function(){var p=S.pending;S.user={role:'erhverv',name:'Ullerup Sportsklub'};S.pending=null;S.reason='';if(p==='agent'){addAgent();go('resultater',true);}else{flash('Logget ind med MitID Erhverv');go('backend');}},
+  loginAdmin:function(){S.user={role:'admin',name:'DMP administrator'};S.pending=null;S.reason='';flash('Logget ind som administrator');go('admin');},
+  loginDmp:function(){S.user={role:'kommune',name:'Allerød Kommune'};S.pending=null;S.reason='';flash('Logget ind via DMP brugerstyring');go('kommune');},
+  logout:function(){S.user=null;S.reason='';flash('Du er logget ud');go('forside',true);},
+  openContact:function(){S.contact=true;S.sent=false;S.cErr=false;renderModal();var f=document.getElementById('c-name');if(f)f.focus();},
+  closeContact:function(){S.contact=false;S.sent=false;S.cMsg='';renderModal();},
+  sendContact:function(){if(!S.cMsg.trim()){S.cErr=true;renderModal();return;}S.sent=true;S.cErr=false;renderModal();},
+  addLine:function(){
+    var k=parseInt(S.nk,10), t=parseInt(String(S.nt).replace(/\D/g,''),10), p=String(S.np).replace(/\D/g,'');
+    if(ALLOWED.indexOf(k)<0){S.lineErr='Klasse '+k+' er ikke tilladt for modtagestedet i modtagerregistret (tilladt: klasse 0 og 1).';render();return;}
+    if(!t){S.lineErr='Angiv en mængde i ton.';render();return;}
+    upd(S.myId,function(m){m.lines=m.lines.concat([{k:k,t:t,p:p?parseInt(p,10):null}]);return m;});
+    S.nt='';S.np='';S.lineErr='';flash('Linjen er tilføjet');render();
+  },
+  delLine:function(i){upd(S.myId,function(m){m.lines=m.lines.filter(function(_,j){return j!==+i;});return m;});render();},
+  delTek:function(i){upd(S.myId,function(m){m.tek=m.tek.filter(function(_,j){return j!==+i;});return m;});render();},
+  delOvr:function(i){upd(S.myId,function(m){m.ovr=m.ovr.filter(function(_,j){return j!==+i;});return m;});render();},
+  delDoc:function(i){upd(S.myId,function(m){m.docs=m.docs.filter(function(_,j){return j!==+i;});return m;});render();},
+  saveAd:function(){flash('Annoncen er gemt og vises i søgningen');},
+  previewAd:function(){S.res='alle';S.type='alle';S.showCatId=null;S.sel=S.myId;go('detalje');},
+  contactKommune:function(){flash('I den færdige løsning åbner dette kommunens kontaktformular');},
+  showCat:function(id){S.showCatId=id;S.res='alle';S.type='alle';go('resultater',true);},
+  addCat:function(){var n=S.newCat.trim();if(!n)return;S.cats=S.cats.concat([{id:'c'+Date.now(),name:n,start:TODAY,end:'2027-12-31',lat:55.83,lng:12.33,members:[]}]);S.newCat='';flash('Mulighedskataloget er oprettet');render();},
+  showAtt:function(){S.att=S.attQ.trim()==='3232433-1'?'ok':'none';render();},
+  demoAtt:function(){S.attQ='3232433-1';S.att='ok';render();},
+
+};
+
+document.getElementById('map').addEventListener('click',function(e){
+  if(!sketch||!S.pickOrigin||e.target.closest('[data-a]'))return;
+  var r=this.getBoundingClientRect(),x=(e.clientX-r.left)/r.width,y=(e.clientY-r.top)/r.height;
+  setOriginAt(B.maxLat-y*(B.maxLat-B.minLat),B.minLng+x*(B.maxLng-B.minLng));
+});
+document.addEventListener('click',function(e){
+  var el=e.target.closest('[data-a]'); if(!el)return;
+  var fn=act[el.getAttribute('data-a')]; if(fn){e.preventDefault();fn(el.getAttribute('data-v'),el,e);}
+});
+document.addEventListener('input',function(e){
+  var k=e.target.getAttribute&&e.target.getAttribute('data-t'); if(!k)return;
+  var v=e.target.value;
+  if(k==='b-kontakt'){upd(S.myId,function(m){m.kontakt=v;return m;});return;}
+  if(k==='b-besk'){upd(S.myId,function(m){m.besk=v;return m;});return;}
+  S[k]=v;
+});
+document.addEventListener('change',function(e){
+  var t=e.target, k=t.getAttribute&&t.getAttribute('data-f'); if(!k)return;
+  if(['big','sort','kalk'].indexOf(k)>=0){S[k]=t.checked;render(true);return;}
+  if(k==='full'){S.svc=t.checked?SVC.map(function(x){return x[0];}):[];render(true);return;}
+  if(k==='svc'){var sv=t.getAttribute('data-v');S.svc=t.checked?S.svc.concat([sv]):S.svc.filter(function(x){return x!==sv;});render(true);var el=document.querySelector('[data-f=svc][data-v='+sv+']');if(el)el.focus();return;}
+  if(k==='jt'){var jv=t.getAttribute('data-v');S.jt=t.checked?S.jt.concat([jv]):S.jt.filter(function(x){return x!==jv;});render(true);var je=document.querySelector('[data-f=jt][data-v='+jv+']');if(je)je.focus();return;}
+  if(k==='minT'){var v=parseInt(t.value,10);if(!isNaN(v)&&v>=0){S.minT=v;S.big=true;}S.editMin=false;render(true);return;}
+  if(k==='b-jt'){var bj=t.getAttribute('data-v');upd(S.myId,function(m){m.jt=t.checked?m.jt.concat([bj]):m.jt.filter(function(x){return x!==bj;});return m;});return;}
+  if(['res','type','from','to'].indexOf(k)>=0){S[k]=t.value;render(true);return;}
+  if(k==='nk'){S.nk=t.value;return;}
+  if(k==='newKravType'){S.newKravType=t.value;return;}
+  if(k==='myId'){S.myId=+t.value;S.lineErr='';S.fileErr='';render();return;}
+  if(k==='b-status'){upd(S.myId,function(m){m.status=t.value;return m;});render();return;}
+  if(k==='b-start'){upd(S.myId,function(m){m.start=t.value;return m;});render();return;}
+  if(k==='b-end'){upd(S.myId,function(m){m.end=t.value;return m;});render();return;}
+  if(k==='addTek'&&t.value){var v=t.value;upd(S.myId,function(m){m.tek=m.tek.concat([v]);return m;});render();return;}
+  if(k==='addOvr'&&t.value){var v2=t.value;upd(S.myId,function(m){m.ovr=m.ovr.concat([v2]);return m;});render();return;}
+  if(k.indexOf('yd-')===0){var key=k.slice(3);upd(S.myId,function(m){m.yd=Object.assign({},m.yd);m.yd[key]=t.checked;return m;});return;}
+  if(k==='cat'){var p=t.getAttribute('data-v').split(':'),cid=p[0],mid=+p[1];S.cats=S.cats.map(function(c){if(c.id!==cid)return c;var mem=t.checked?c.members.concat([mid]):c.members.filter(function(x){return x!==mid;});var first=mem.length?byId(mem[0]):null;return Object.assign({},c,{members:mem},(c.members.length===0&&first)?{lat:first.lat+0.004,lng:first.lng-0.01}:{});});render();return;}
+  if(k==='ndfile'){var nf=t.files&&t.files[0],nk=t.getAttribute('data-v');if(!nf)return;if(!/\.pdf$/i.test(nf.name)){S.fileErr='Kun PDF-filer kan uploades.';t.value='';render();return;}S.fileErr='';upd(S.myId,function(m){m.nd=Object.assign({},m.nd);m.nd[nk]=nf.name;return m;});flash('Dokumentationen er tilføjet');render();return;}
+  if(k==='file'){var f=t.files&&t.files[0];if(!f)return;if(!/\.pdf$/i.test(f.name)){S.fileErr='Kun PDF-filer kan uploades.';t.value='';render();return;}S.fileErr='';upd(S.myId,function(m){m.docs=m.docs.concat([f.name]);return m;});flash('Dokumentet er tilføjet');render();return;}
+});
+document.addEventListener('keydown',function(e){if(e.target&&e.target.id==='minT'){if(e.key==='Enter'){e.target.blur();}else if(e.key==='Escape'){S.editMin=false;render();}return;}if(e.key!=='Escape')return;if(S.agentModal){act.closeAgent();return;}if(S.pickOrigin){S.pickOrigin=false;render();return;}if(S.guide){act.closeGuide();return;}if(S.contact){act.closeContact();return;}var hd=document.getElementById('hdr');if(hd.classList.contains('open'))act.menu();});
+
+(function(){
+  var sp=document.getElementById('splitter'),mv=document.getElementById('mapView'),drag=false;
+  function setW(w){var r=mv.getBoundingClientRect(),max=Math.max(360,(r.width-64)*0.7);w=Math.min(max,Math.max(300,w));mv.style.setProperty('--side',Math.round(w)+'px');sp.setAttribute('aria-valuenow',Math.round(w));if(map)map.invalidateSize();try{localStorage.setItem('jordplan-side',Math.round(w));}catch(e){}}
+  try{var sv=parseInt(localStorage.getItem('jordplan-side'),10);if(sv)mv.style.setProperty('--side',sv+'px');}catch(e){}
+  sp.addEventListener('pointerdown',function(e){drag=true;sp.setPointerCapture(e.pointerId);sp.classList.add('drag');document.body.classList.add('resizing');});
+  sp.addEventListener('pointermove',function(e){if(!drag)return;var r=mv.getBoundingClientRect(),pad=parseFloat(getComputedStyle(mv).paddingLeft)||0;setW(e.clientX-r.left-pad-7);});
+  function end(){if(!drag)return;drag=false;sp.classList.remove('drag');document.body.classList.remove('resizing');if(map)map.invalidateSize();}
+  sp.addEventListener('pointerup',end);sp.addEventListener('pointercancel',end);
+  sp.addEventListener('dblclick',function(){mv.style.removeProperty('--side');try{localStorage.removeItem('jordplan-side');}catch(e){}if(map)map.invalidateSize();});
+  sp.addEventListener('keydown',function(e){if(e.key!=='ArrowLeft'&&e.key!=='ArrowRight')return;e.preventDefault();var cur=document.getElementById('side').getBoundingClientRect().width;setW(cur+(e.key==='ArrowRight'?24:-24));});
+})();
+render();
+document.querySelector('.proto').addEventListener('animationend',function(e){e.target.hidden=true;if(map)map.invalidateSize();});
+
+function boot(){initMap();}
+if(window.JP_NO_LEAFLET){boot();return;}
+var s=document.createElement('script');
+s.src='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';
+s.onload=boot;
+s.onerror=function(){var u=document.createElement('script');u.src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';u.onload=boot;u.onerror=boot;document.head.appendChild(u);};
+document.head.appendChild(s);
+})();
+</script>
+</body>
+</html>
